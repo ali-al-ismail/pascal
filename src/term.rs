@@ -37,8 +37,8 @@ impl Terminal {
         Ok(())
     }
 
-    pub fn move_cursor(row: u16, column: u16) -> Result<(), Error> {
-        stdout().queue(MoveTo(row, column))?;
+    pub fn move_cursor(column: u16, row: u16) -> Result<(), Error> {
+        stdout().queue(MoveTo(column, row))?;
         Self::flush()?;
         Ok(())
     }
