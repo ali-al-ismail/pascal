@@ -98,14 +98,14 @@ impl Editor {
                 //self.save();
                 self.quit = true;
             }
-            (KeyCode::Char('h'), KeyModifiers::NONE)
-            | (KeyCode::Char('j'), KeyModifiers::NONE)
-            | (KeyCode::Char('k'), KeyModifiers::NONE)
-            | (KeyCode::Char('l'), KeyModifiers::NONE)
-            | (KeyCode::Left, KeyModifiers::NONE)
-            | (KeyCode::Right, KeyModifiers::NONE)
-            | (KeyCode::Down, KeyModifiers::NONE)
-            | (KeyCode::Up, KeyModifiers::NONE) => {
+            (
+                KeyCode::Char('h' | 'j' | 'k' | 'l')
+                | KeyCode::Left
+                | KeyCode::Right
+                | KeyCode::Down
+                | KeyCode::Up,
+                KeyModifiers::NONE,
+            ) => {
                 self.handle_movement(key.code)?;
             }
             (KeyCode::Char('i'), KeyModifiers::NONE) => {
