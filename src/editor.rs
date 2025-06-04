@@ -13,22 +13,25 @@ use std::io::{Error, Stdout, Write, stdout};
 const NAME: &str = "pascal-editor";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-enum Mode{
+enum Mode {
     NORMAL,
-    INSERT
+    INSERT,
 }
 
 pub struct Editor {
     term: Terminal,
     quit: bool,
-    mode: Mode
-  //docu:
+    mode: Mode, //docu:
 }
 
 impl Editor {
     pub fn build() -> Result<Editor, Error> {
         let term = Terminal::build()?;
-        Ok(Editor { term, quit: false, mode: Mode::NORMAL })
+        Ok(Editor {
+            term,
+            quit: false,
+            mode: Mode::NORMAL,
+        })
     }
 
     pub fn run(&mut self) {
@@ -75,11 +78,12 @@ impl Editor {
 
         // TODO: HANDLE BASED ON MODE
         if let Some(key) = event.as_key_press_event() {
-            match self.mode{
-                Mode::NORMAL => {self.handle_normal_mode_key_event(key)?;}
+            match self.mode {
+                Mode::NORMAL => {
+                    self.handle_normal_mode_key_event(key)?;
+                }
                 _ => {}
             }
-            
         }
         // TODO: HANDLE RESIZE EVENT TO RESIZE WIDTH HEIGHT OF TERM
         Ok(())
@@ -106,7 +110,7 @@ impl Editor {
             }
             (KeyCode::Char('i'), KeyModifiers::NONE) => {
                 //self.insertmode
-                }
+            }
             _ => {}
         }
         Ok(())
@@ -114,22 +118,22 @@ impl Editor {
 
     // moves cursor based on directional key pressed
     fn handle_movement(&self, direction: KeyCode) -> Result<(), Error> {
-        // TODO: MOVE BASED CURSOR BASED ON DIRECTIONAL KEY 
+        // TODO: MOVE BASED CURSOR BASED ON DIRECTIONAL KEY
         // WRAP CURSOR IF RIGHT OR LEFT BOUNDS REACHED
         // GO TO TOP / BOTTOM BASED ON UP OR BOTTOM BOUNDS REACHED
-        match direction{
+        match direction {
             (KeyCode::Char('h') | KeyCode::Left) => {
                 Terminal::move_left(1)?;
-            },
+            }
             (KeyCode::Char('j') | KeyCode::Right) => {
                 Terminal::move_right(1)?;
-            },
+            }
             (KeyCode::Char('k') | KeyCode::Down) => {
                 Terminal::move_down(1)?;
-            },
+            }
             (KeyCode::Char('l') | KeyCode::Up) => {
                 Terminal::move_up(1)?;
-            },
+            }
             _ => {}
         }
         Ok(())

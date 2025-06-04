@@ -1,5 +1,13 @@
-use std::{fmt::Display, io::{stdout, Error, Stdout, Write}};
-use crossterm::{cursor::{MoveDown, MoveLeft, MoveRight, MoveTo, MoveUp}, style::Print, terminal::{Clear, ClearType}, QueueableCommand};
+use crossterm::{
+    QueueableCommand,
+    cursor::{MoveDown, MoveLeft, MoveRight, MoveTo, MoveUp},
+    style::Print,
+    terminal::{Clear, ClearType},
+};
+use std::{
+    fmt::Display,
+    io::{Error, Stdout, Write, stdout},
+};
 
 pub struct Terminal {
     pub width: u16,
@@ -24,7 +32,7 @@ impl Terminal {
         Ok(())
     }
 
-    pub fn print<T: Display>(message: T)-> Result<(), Error>{
+    pub fn print<T: Display>(message: T) -> Result<(), Error> {
         stdout().queue(Print(message))?;
         Ok(())
     }
@@ -55,5 +63,4 @@ impl Terminal {
         Self::flush()?;
         Ok(())
     }
-    
 }
