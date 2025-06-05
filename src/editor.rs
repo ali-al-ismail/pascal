@@ -134,14 +134,14 @@ impl Editor {
                 KeyCode::Enter | KeyCode::Backspace | KeyCode::Tab | KeyCode::Char(_),
                 KeyModifiers::NONE,
             ) => {
-                self.handle_writing_event(key.code)?;
+                self.handle_writing_event(key.code);
             }
             _ => {}
         }
         Ok(())
     }
 
-    fn handle_writing_event(&mut self, key: KeyCode) -> Result<(), Error> {
+    fn handle_writing_event(&mut self, key: KeyCode) {
         match key {
             KeyCode::Char(c) => {
                 let line = self.cursor_y;
@@ -150,7 +150,23 @@ impl Editor {
                 self.cursor_x += c.width().unwrap() as u16; // Move cursor right by the width of the character
             }
             KeyCode::Backspace => {
-                self.docu.remove_char();
+                // IF THE CURSOR ISNT POINTING AT THE LEFT EDGE
+                if self.cursor_x > 0 {
+                    let line = self.cursor_y;
+                    let col = self.cursor_x - 1;
+                    self.docu.remove_char(line, col);
+                    self.cursor_x -= 1;
+                }
+                // IF THE CURSOR IS AT THE LEFT EDGE MOVE IT UP AND MERGE CURRENT LINE WITH LINE ABOVE
+                else if self.cursor_y > 0 {
+                    let prev_line = self.cursor_y - 1;
+                    let prev_line_len =
+                        self.docu.lines[prev_line as usize].graphemes(true).count() as u16;
+                    // TODO: LINE JOINING
+                    self.cursor_y = prev_line;
+                    self.cursor_x = prev_line_len;
+                }
+                self.update_offsets();
             }
             KeyCode::Enter => {
                 self.docu.newline();
@@ -158,8 +174,6 @@ impl Editor {
             KeyCode::Tab => {}
             _ => {}
         }
-
-        Ok(())
     }
 
     fn enter_insert(&mut self) {

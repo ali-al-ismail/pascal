@@ -32,7 +32,19 @@ impl Document {
         *line_str = graphemes.concat();
     }
 
-    pub fn remove_char(&mut self) {}
+    pub fn remove_char(&mut self, line: u16, col: u16) {
+        if line as usize >= self.lines.len() {
+            return;
+        }
+        let line_str = &mut self.lines[line as usize];
+        let mut graphemes: Vec<&str> =
+            unicode_segmentation::UnicodeSegmentation::graphemes(line_str.as_str(), true).collect();
+        if col as usize >= graphemes.len() {
+            return;
+        }
+        graphemes.remove(col as usize);
+        *line_str = graphemes.concat();
+    }
 
     pub fn newline(&mut self) {}
 
