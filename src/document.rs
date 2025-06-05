@@ -9,7 +9,10 @@ pub struct Document {
 impl Document {
     pub fn new(file_name: &str) -> Result<Self, Error> {
         let file = fs::read_to_string(file_name)?;
-        let lines: Vec<String> = file.lines().map(str::to_string).collect();
+        let mut lines: Vec<String> = file.lines().map(str::to_string).collect();
+        if lines.is_empty() {
+            lines.push(String::new());
+        }
         let n_lines = lines.len() as u16;
         Ok(Document { lines, n_lines })
     }
