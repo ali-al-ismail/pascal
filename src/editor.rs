@@ -1,7 +1,7 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, read};
 
 use crate::term::Terminal;
-use std::{fs, io::Error};
+use std::{fs, io::Error, path::Path};
 
 const NAME: &str = "pascal-editor";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -19,6 +19,7 @@ pub struct Editor {
     cursor_x: u16,
     cursor_y: u16,
     top_offset: u16,
+    status_line: StatusLine,
 }
 
 struct Document {
@@ -26,10 +27,27 @@ struct Document {
     n_lines: u16,
 }
 
+struct StatusLine {
+    file_name: String,
+    mode: Mode,
+    line_number: u16,
+    has_unsaved_changes: bool,
+}
+
 impl Editor {
     pub fn build(file_path: &str) -> Result<Editor, Error> {
         let docu = Self::open_file(file_path)?;
         let term = Terminal::build()?;
+        let status_line = StatusLine {
+            file_name: Path::new(file_path)
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or(file_path)
+                .to_string(),
+            mode: Mode::NORMAL,
+            line_number: 0,
+            has_unsaved_changes: false,
+        };
         Ok(Editor {
             term,
             quit: false,
@@ -38,6 +56,7 @@ impl Editor {
             cursor_x: 0,
             cursor_y: 0,
             top_offset: 0,
+            status_line,
         })
     }
 
@@ -145,12 +164,13 @@ impl Editor {
     }
 
     fn enter_insert(&mut self) {
-        // TODO: REFLECT MODE CHANGE IN STATUS BAR
+        self.status_line.mode = Mode::INSERT;
         self.mode = Mode::INSERT;
     }
 
     fn enter_normal(&mut self) {
         // TODO: REFLECT MODE CHANGE IN STATUS BAR
+        self.status_line.mode = Mode::NORMAL;
         self.mode = Mode::NORMAL;
     }
 
@@ -206,7 +226,7 @@ impl Editor {
         let height = self.term.height;
         let width = self.term.width;
 
-        for row in 0..height {
+        for row in 0..height - 2 {
             Terminal::move_cursor(0, row)?;
             let doc_row = self.top_offset + row;
             if doc_row < n_lines {
@@ -216,11 +236,35 @@ impl Editor {
                 Terminal::print("~")?;
             }
         }
-
+        self.render_status_line()?;
         let cursor_screen_y = self.cursor_y.saturating_sub(self.top_offset);
         Terminal::move_cursor(self.cursor_x, cursor_screen_y)?;
 
         Terminal::flush()?;
+
+        Ok(())
+    }
+
+    fn render_status_line(&self) -> Result<(), Error> {
+        let mut status_line = format!(
+            "{} - {} | {} lines",
+            self.status_line.file_name,
+            match self.status_line.mode {
+                Mode::NORMAL => "NORMAL",
+                Mode::INSERT => "INSERT",
+            },
+            self.docu.n_lines
+        );
+        if self.status_line.has_unsaved_changes {
+            status_line.push_str(" [+]");
+        }
+
+        // print status line at the bottom
+        Terminal::move_cursor(0, self.term.height - 1)?;
+        Terminal::set_background_color(crossterm::style::Color::DarkGrey)?;
+        Terminal::set_foreground_color(crossterm::style::Color::White)?;
+        Terminal::print(&status_line)?;
+        Terminal::reset_color()?;
 
         Ok(())
     }
