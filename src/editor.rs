@@ -47,6 +47,10 @@ impl Editor {
         }
         // main editor loop
 
+        if let Err(e) = self.render() {
+            panic!("Couldn't render file: {e}");
+        }
+
         loop {
             if self.quit {
                 break;
