@@ -135,6 +135,7 @@ impl Editor {
                 KeyModifiers::NONE,
             ) => {
                 self.handle_writing_event(key.code);
+                self.status_bar.has_unsaved_changes = true;
             }
             _ => {}
         }
