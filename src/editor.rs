@@ -260,23 +260,41 @@ impl Editor {
     }
 
     fn render_status_line(&self) -> Result<(), Error> {
-        let mut status_line = format!(
-            "{} - {} | {} lines",
-            self.status_line.file_name,
-            match self.status_line.mode {
-                Mode::NORMAL => "NORMAL",
-                Mode::INSERT => "INSERT",
-            },
-            self.docu.n_lines
-        );
+        let mode = match self.status_line.mode {
+            Mode::NORMAL => "│ NORMAL",
+            Mode::INSERT => "│ INSERT",
+        };
+        let mut left_side = String::from(" ");
+        left_side.push_str(&self.status_line.file_name);
+
         if self.status_line.has_unsaved_changes {
-            status_line.push_str(" [+]");
+            left_side.push_str(" [+]");
+        } else {
+            left_side.push_str("    ");
         }
+        left_side.push_str(mode);
+
+        let right_side = format!(
+            "{}/{}  ",
+            if self.cursor_y <= self.docu.n_lines {
+                self.cursor_y
+            } else {
+                self.docu.n_lines
+            },
+            self.docu.n_lines - 1
+        );
+        let status_line = format!(
+            "{:<width$} │ {:>right_width$}",
+            left_side,
+            right_side,
+            width = self.term.width as usize - right_side.len() - 3,
+            right_width = right_side.len()
+        );
 
         // print status line at the bottom
         Terminal::move_cursor(0, self.term.height - 1)?;
-        Terminal::set_background_color(crossterm::style::Color::DarkGrey)?;
-        Terminal::set_foreground_color(crossterm::style::Color::White)?;
+        Terminal::set_background_color(crossterm::style::Color::White)?;
+        Terminal::set_foreground_color(crossterm::style::Color::Black)?;
         Terminal::print(&status_line)?;
         Terminal::reset_color()?;
 
