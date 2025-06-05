@@ -139,20 +139,20 @@ impl Editor {
         // WRAP CURSOR IF RIGHT OR LEFT BOUNDS REACHED
         // GO TO TOP / BOTTOM BASED ON UP OR BOTTOM BOUNDS REACHED
         match direction {
-            (KeyCode::Char('h') | KeyCode::Left) => {
+            KeyCode::Char('h') | KeyCode::Left => {
                 Terminal::move_left(1)?;
                 self.cursor_x = self.cursor_x.saturating_sub(1);
             }
-            (KeyCode::Char('j') | KeyCode::Right) => {
+            KeyCode::Char('j') | KeyCode::Down => {
                 Terminal::move_down(1)?;
                 self.cursor_y += 1;
             }
-            (KeyCode::Char('k') | KeyCode::Down) => {
+            KeyCode::Char('k') | KeyCode::Up => {
                 Terminal::move_up(1)?;
 
                 self.cursor_y = self.cursor_y.saturating_sub(1);
             }
-            (KeyCode::Char('l') | KeyCode::Up) => {
+            KeyCode::Char('l') | KeyCode::Right => {
                 Terminal::move_right(1)?;
                 self.cursor_x += 1;
             }
