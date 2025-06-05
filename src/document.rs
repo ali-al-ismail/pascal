@@ -1,6 +1,6 @@
 use std::fs;
 use std::io::Error;
-
+use unicode_segmentation;
 pub struct Document {
     pub lines: Vec<String>,
     pub n_lines: u16,
@@ -16,4 +16,14 @@ impl Document {
         let n_lines = lines.len() as u16;
         Ok(Document { lines, n_lines })
     }
+
+    pub fn insert_char(&mut self){}
+
+    pub fn remove_char(&mut self){}
+
+    pub fn newline(&mut self) {}
+
+    /// Splits the line at the cursor when user presses enter
+    pub fn split_line(&mut self){}
+
 }

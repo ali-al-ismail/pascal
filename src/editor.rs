@@ -130,8 +130,24 @@ impl Editor {
             (KeyCode::Esc, KeyModifiers::NONE) => {
                 self.enter_normal();
             }
+            (KeyCode::Enter | KeyCode::Backspace | KeyCode::Tab | KeyCode::Char(_), KeyModifiers::NONE) => {
+                self.handle_writing_event(key.code)?;
+            }
             _ => {}
         }
+        Ok(())
+    }
+
+    fn handle_writing_event(&mut self, key: KeyCode) -> Result<(), Error>{
+        match key{
+            KeyCode::Char(c) => {self.docu.insert_char();},
+            KeyCode::Backspace => {self.docu.remove_char();},
+            KeyCode::Enter => {self.docu.newline();} // TODO: newline should determine whether to split current line or move it down
+            KeyCode::Tab => {}
+            _ => {}
+
+        }
+
         Ok(())
     }
 
