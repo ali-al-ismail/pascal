@@ -40,11 +40,11 @@ impl StatusBar {
             "{} │ {}/{}  ",
             cursor_x,
             if cursor_y <= n_lines {
-                cursor_y
+                cursor_y+1
             } else {
                 n_lines
             },
-            n_lines - 1
+            n_lines
         );
 
         let status_bar = format!(
