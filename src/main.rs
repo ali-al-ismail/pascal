@@ -7,10 +7,16 @@ mod statusbar;
 mod term;
 fn main() {
     if let Some(file_name) = collect_args() {
-        let mut editor = Editor::build(&file_name).unwrap();
-        editor.run();
+        match Editor::build(&file_name) {
+            Ok(mut editor) => editor.run(),
+            Err(e) => {
+                eprintln!("Error: Could not open file '{}': {}", file_name, e);
+                std::process::exit(1);
+            }
+        }
     } else {
-        panic!("Couldn't parse file location...");
+        eprintln!("Couldn't parse file location...");
+        std::process::exit(1);
     }
 }
 

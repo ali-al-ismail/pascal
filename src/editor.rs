@@ -22,7 +22,7 @@ pub struct Editor {
 
 impl Editor {
     pub fn build(file_path: &str) -> Result<Editor, Error> {
-        let docu = Document::new(file_path).unwrap();
+        let docu = Document::new(file_path)?;
         let term = Terminal::build()?;
         let status_bar = StatusBar {
             file_name: Path::new(file_path)
