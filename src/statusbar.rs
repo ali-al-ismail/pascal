@@ -1,5 +1,4 @@
-use crate::{mode::Mode, statusbar};
-use crossterm::style::Color;
+use crate::mode::Mode;
 pub struct StatusBar {
     pub file_name: String,
     pub mode: Mode,
