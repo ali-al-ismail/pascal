@@ -17,7 +17,14 @@ impl StatusBar {
             has_unsaved_changes,
         }
     }
-    pub fn format(&self, width: u16, unsaved: bool, cursor_y: u16, cursor_x: u16, n_lines: u16) -> String {
+    pub fn format(
+        &self,
+        width: u16,
+        unsaved: bool,
+        cursor_y: u16,
+        cursor_x: u16,
+        n_lines: u16,
+    ) -> String {
         let mut mode = String::from("│ ");
         mode.push_str(&self.mode.to_string());
         let mut left_side = String::from(" ");
@@ -45,7 +52,7 @@ impl StatusBar {
             left_side,
             right_side,
             width = width as usize - right_side.len() - 2,
-            right_width = right_side.len()-1
+            right_width = right_side.len() - 1
         );
         status_bar
     }

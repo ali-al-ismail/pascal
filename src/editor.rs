@@ -86,10 +86,10 @@ impl Editor {
         if let Some(key) = event.as_key_press_event() {
             match self.mode {
                 Mode::NORMAL => {
-                    self.handle_normal_mode_key_event(key)?;
+                    self.handle_normal_mode_key_event(key);
                 }
                 Mode::INSERT => {
-                    self.handle_insert_mode_key_event(key)?;
+                    self.handle_insert_mode_key_event(key);
                 }
             }
             Terminal::clear()?;
@@ -99,7 +99,7 @@ impl Editor {
         Ok(())
     }
 
-    fn handle_normal_mode_key_event(&mut self, key: KeyEvent) -> Result<(), Error> {
+    fn handle_normal_mode_key_event(&mut self, key: KeyEvent) {
         match (key.code, key.modifiers) {
             (KeyCode::Char('q'), KeyModifiers::CONTROL) => {
                 self.quit = true;
@@ -116,17 +116,16 @@ impl Editor {
                 | KeyCode::Up,
                 KeyModifiers::NONE,
             ) => {
-                self.handle_movement(key.code)?;
+                self.handle_movement(key.code);
             }
             (KeyCode::Char('i'), KeyModifiers::NONE) => {
                 self.enter_insert();
             }
             _ => {}
         }
-        Ok(())
     }
 
-    fn handle_insert_mode_key_event(&mut self, key: KeyEvent) -> Result<(), Error> {
+    fn handle_insert_mode_key_event(&mut self, key: KeyEvent) {
         match (key.code, key.modifiers) {
             (KeyCode::Esc, KeyModifiers::NONE) => {
                 self.enter_normal();
@@ -139,11 +138,10 @@ impl Editor {
                 self.status_bar.has_unsaved_changes = true;
             }
             (KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down, KeyModifiers::NONE) => {
-                self.handle_movement(key.code)?;
+                self.handle_movement(key.code);
             }
             _ => {}
         }
-        Ok(())
     }
 
     fn handle_writing_event(&mut self, key: KeyCode) {
@@ -200,7 +198,7 @@ impl Editor {
     }
 
     // moves cursor based on directional key pressed
-    fn handle_movement(&mut self, direction: KeyCode) -> Result<(), Error> {
+    fn handle_movement(&mut self, direction: KeyCode) {
         match direction {
             KeyCode::Char('h') | KeyCode::Left => {
                 let line = &self.docu.lines[self.cursor_y as usize];
@@ -208,7 +206,6 @@ impl Editor {
                 if self.cursor_x > 0 {
                     self.cursor_x -= 1;
                     let width = graphemes[self.cursor_x as usize].width() as u16;
-                    Terminal::move_left(width)?;
                 }
             }
             KeyCode::Char('j') | KeyCode::Down => {
@@ -224,8 +221,6 @@ impl Editor {
 
                     if self.cursor_y >= self.top_offset + self.term.height - 1 {
                         self.top_offset += 1;
-                    } else {
-                        Terminal::move_down(1)?;
                     }
                 }
             }
@@ -242,8 +237,6 @@ impl Editor {
 
                     if self.cursor_y < self.top_offset {
                         self.top_offset = self.top_offset.saturating_sub(1);
-                    } else {
-                        Terminal::move_up(1)?;
                     }
                 }
             }
@@ -253,13 +246,11 @@ impl Editor {
                 if (self.cursor_x as usize) < graphemes.len() {
                     let width = graphemes[self.cursor_x as usize].width() as u16;
                     self.cursor_x += 1;
-                    Terminal::move_right(width)?;
                 }
             }
             _ => {}
         }
         self.update_offsets();
-        Ok(())
     }
 
     fn update_top_offset(&mut self) {
