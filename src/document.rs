@@ -33,7 +33,7 @@ impl Document {
             .unwrap_or_else(|e| {
                 panic!("Couldn't open or create file: {}, err: {e}", self.file_name);
             });
-        file.write_all(content.as_bytes()).map_err(|e| {
+        file.write_all(content.as_bytes()).unwrap_or_else(|e| {
             panic!("Couldn't write to file: {}, err: {e}", self.file_name);
         });
     }
