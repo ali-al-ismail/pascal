@@ -186,13 +186,26 @@ impl Editor {
                 self.cursor_x = self.cursor_x.saturating_sub(1);
             }
             KeyCode::Char('j') | KeyCode::Down => {
-                Terminal::move_down(1)?;
-                self.cursor_y += 1;
+                if self.cursor_y + 1 < self.docu.n_lines {
+                    self.cursor_y += 1;
+
+                    if self.cursor_y >= self.top_offset + self.term.height - 1 {
+                        self.top_offset += 1;
+                    } else {
+                        Terminal::move_down(1)?;
+                    }
+                }
             }
             KeyCode::Char('k') | KeyCode::Up => {
-                Terminal::move_up(1)?;
+                if self.cursor_y > 0 {
+                    self.cursor_y -= 1;
 
-                self.cursor_y = self.cursor_y.saturating_sub(1);
+                    if self.cursor_y < self.top_offset {
+                        self.top_offset = self.top_offset.saturating_sub(1);
+                    } else {
+                        Terminal::move_up(1)?;
+                    }
+                }
             }
             KeyCode::Char('l') | KeyCode::Right => {
                 Terminal::move_right(1)?;
@@ -226,7 +239,7 @@ impl Editor {
         let height = self.term.height;
         let width = self.term.width;
 
-        for row in 0..height - 2 {
+        for row in 0..height - 1 {
             Terminal::move_cursor(0, row)?;
             let doc_row = self.top_offset + row;
             if doc_row < n_lines {
@@ -237,7 +250,8 @@ impl Editor {
             }
         }
         self.render_status_line()?;
-        let cursor_screen_y = self.cursor_y.saturating_sub(self.top_offset);
+        let cursor_screen_y =
+            (self.cursor_y.saturating_sub(self.top_offset)).min(self.term.height - 2);
         Terminal::move_cursor(self.cursor_x, cursor_screen_y)?;
 
         Terminal::flush()?;
