@@ -162,7 +162,8 @@ impl Editor {
                     let prev_line = self.cursor_y - 1;
                     let prev_line_len =
                         self.docu.lines[prev_line as usize].graphemes(true).count() as u16;
-                    // TODO: LINE JOINING
+                    
+                    self.docu.join_lines(self.cursor_y);
                     self.cursor_y = prev_line;
                     self.cursor_x = prev_line_len;
                 }

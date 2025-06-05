@@ -46,6 +46,17 @@ impl Document {
         *line_str = graphemes.concat();
     }
 
+    pub fn join_lines(&mut self, line: u16) {
+        if line == 0 || line as usize >= self.lines.len() {
+            return;
+        }
+
+        let current_line = self.lines.remove(line as usize);
+        let prev_line_idx = line - 1;
+        self.lines[prev_line_idx as usize].push_str(&current_line);
+        self.n_lines -= 1;
+    }
+
     pub fn newline(&mut self) {}
 
     /// Splits the line at the cursor when user presses enter
