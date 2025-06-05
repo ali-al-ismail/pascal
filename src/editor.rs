@@ -101,15 +101,13 @@ impl Editor {
             match self.mode {
                 Mode::NORMAL => {
                     self.handle_normal_mode_key_event(key)?;
-                    Terminal::clear()?;
-                    self.render()?;
                 }
                 Mode::INSERT => {
                     self.handle_insert_mode_key_event(key)?;
-                    Terminal::clear()?;
-                    self.render()?;
                 }
             }
+            Terminal::clear()?;
+            self.render()?;
         }
         // TODO: HANDLE RESIZE EVENT TO RESIZE WIDTH HEIGHT OF TERM
         Ok(())
