@@ -57,7 +57,22 @@ impl Document {
         self.n_lines -= 1;
     }
 
-    pub fn newline(&mut self) {}
+    pub fn newline(&mut self, line: u16, col: u16) {
+        let line_str = self.lines[line as usize].clone();
+        let mut graphemes: Vec<&str> =
+            unicode_segmentation::UnicodeSegmentation::graphemes(line_str.as_str(), true).collect();
+        // case 1: user tries to add a new line at the end of the current line
+        if col as usize == graphemes.len() {
+            self.lines.insert(line as usize + 1, String::new());
+            self.n_lines += 1;
+            return;
+        }
+        // case 2: user tries to either newline at the start of in the middle of a line
+        let new_line = graphemes.split_off(col as usize);
+        self.lines[line as usize] = graphemes.concat();
+        self.lines.insert(line as usize + 1, new_line.concat());
+        self.n_lines += 1;
+    }
 
     /// Splits the line at the cursor when user presses enter
     pub fn split_line(&mut self) {}

@@ -163,20 +163,26 @@ impl Editor {
                     let prev_line = self.cursor_y - 1;
                     let prev_line_len =
                         self.docu.lines[prev_line as usize].graphemes(true).count() as u16;
-                    
+
                     // Join the current line with the one above it.
                     self.docu.join_lines(self.cursor_y);
                     self.cursor_y = prev_line;
                     self.cursor_x = prev_line_len;
                 }
-                self.update_offsets();
+                
             }
             KeyCode::Enter => {
-                self.docu.newline();
-            } // TODO: newline should determine whether to split current line or move it down
+                let line = self.cursor_y;
+                let col = self.cursor_x;
+                self.docu.newline(line, col);
+                // move cursor to new line
+                self.cursor_y += 1;
+                self.cursor_x = 0;
+            }
             KeyCode::Tab => {}
             _ => {}
         }
+        self.update_offsets();
     }
 
     fn enter_insert(&mut self) {
