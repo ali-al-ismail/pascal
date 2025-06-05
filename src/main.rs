@@ -1,5 +1,6 @@
 use crate::editor::Editor;
 use std::env::{self};
+mod document;
 mod editor;
 mod mode;
 mod statusbar;

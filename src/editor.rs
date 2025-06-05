@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, read};
 
-use crate::mode::Mode;
+use crate::{document::Document, mode::Mode};
 use crate::statusbar::StatusBar;
 use crate::term::Terminal;
 use std::{fs, io::Error, path::Path};
@@ -18,14 +18,10 @@ pub struct Editor {
     status_bar: StatusBar,
 }
 
-struct Document {
-    lines: Vec<String>,
-    n_lines: u16,
-}
 
 impl Editor {
     pub fn build(file_path: &str) -> Result<Editor, Error> {
-        let docu = Self::open_file(file_path)?;
+        let docu = Document::new(file_path).unwrap();
         let term = Terminal::build()?;
         let status_bar = StatusBar {
             file_name: Path::new(file_path)
@@ -213,12 +209,6 @@ impl Editor {
         }
     }
 
-    fn open_file(file_name: &str) -> Result<Document, Error> {
-        let file = fs::read_to_string(file_name)?;
-        let lines: Vec<String> = file.lines().map(str::to_string).collect();
-        let n_lines = lines.len() as u16;
-        Ok(Document { lines, n_lines })
-    }
 
     fn render(&self) -> Result<(), Error> {
         // TODO: HORIZONTAL SCROLLING
