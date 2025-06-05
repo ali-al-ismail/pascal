@@ -16,6 +16,7 @@ pub struct Editor {
     cursor_x: u16,
     cursor_y: u16,
     top_offset: u16,
+    left_offset: u16,
     status_bar: StatusBar,
 }
 
@@ -41,6 +42,7 @@ impl Editor {
             cursor_x: 0,
             cursor_y: 0,
             top_offset: 0,
+            left_offset: 0,
             status_bar,
         })
     }
@@ -163,6 +165,14 @@ impl Editor {
                 if self.cursor_y + 1 < self.docu.n_lines {
                     self.cursor_y += 1;
 
+                    // Clamp cursor_x to new line length so we dont get an out of bounds error if we move from a short line to a long one
+                    let new_line = &self.docu.lines[self.cursor_y as usize];
+                    let new_len = new_line.graphemes(true).count() as u16;
+                    if self.cursor_x > new_len {
+                        self.cursor_x = new_len;
+                    }
+
+               
                     if self.cursor_y >= self.top_offset + self.term.height - 1 {
                         self.top_offset += 1;
                     } else {
@@ -174,6 +184,14 @@ impl Editor {
                 if self.cursor_y > 0 {
                     self.cursor_y -= 1;
 
+                    // Clamp for safety
+                    let new_line = &self.docu.lines[self.cursor_y as usize];
+                    let new_len = new_line.graphemes(true).count() as u16;
+                    if self.cursor_x > new_len {
+                        self.cursor_x = new_len;
+                    }
+
+                 
                     if self.cursor_y < self.top_offset {
                         self.top_offset = self.top_offset.saturating_sub(1);
                     } else {
@@ -192,7 +210,7 @@ impl Editor {
             }
             _ => {}
         }
-        self.update_top_offset();
+        self.update_offsets();
         Ok(())
     }
 
@@ -203,6 +221,20 @@ impl Editor {
         } else if self.cursor_y >= self.top_offset + height {
             self.top_offset = self.cursor_y - height + 1;
         }
+    }
+
+    fn update_left_offset(&mut self) {
+        let width = self.term.width;
+        if self.cursor_x < self.left_offset {
+            self.left_offset = self.cursor_x;
+        } else if self.cursor_x >= self.left_offset + width {
+            self.left_offset = self.cursor_x - width + 1;
+        }
+    }
+
+    fn update_offsets(&mut self) {
+        self.update_top_offset();
+        self.update_left_offset();
     }
 
     fn render(&self) -> Result<(), Error> {
@@ -216,7 +248,18 @@ impl Editor {
             let doc_row = self.top_offset + row;
             if doc_row < n_lines {
                 let line = &self.docu.lines[doc_row as usize];
-                Terminal::print(&line.chars().take(width as usize).collect::<String>())?;
+                let graphemes: Vec<&str> = line.graphemes(true).collect();
+                let mut rendered_line = String::new();
+                let mut width_remaining = 0;
+                for g in graphemes.iter().skip(self.left_offset as usize) {
+                    let graphene_width = g.width() as u16;
+                    if width_remaining + graphene_width > width {
+                        break; // stop rendering if we exceed the terminal width
+                    }
+                    rendered_line.push_str(g);
+                    width_remaining += graphene_width;
+                }
+                Terminal::print(&rendered_line)?;
             } else {
                 Terminal::print("~")?;
             }
@@ -226,9 +269,11 @@ impl Editor {
             (self.cursor_y.saturating_sub(self.top_offset)).min(self.term.height - 2);
         let line = &self.docu.lines[self.cursor_y as usize];
         let graphemes: Vec<&str> = line.graphemes(true).collect();
+        // Calculate display_col relative to left_offset
         let display_col: u16 = graphemes
             .iter()
-            .take(self.cursor_x as usize)
+            .skip(self.left_offset as usize)
+            .take(self.cursor_x.saturating_sub(self.left_offset) as usize)
             .map(|g| g.width() as u16)
             .sum();
         Terminal::move_cursor(display_col, cursor_screen_y)?;
