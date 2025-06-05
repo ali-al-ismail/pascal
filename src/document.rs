@@ -23,11 +23,16 @@ impl Document {
         }
     }
 
-    pub fn save(&self){
+    pub fn save(&self) {
         let content = self.lines.join("\n");
-        let mut file = fs::OpenOptions::new().write(true).create(true).truncate(true).open(&self.file_name).unwrap_or_else(|e| {
-            panic!("Couldn't open or create file: {}, err: {e}", self.file_name);
-        });
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&self.file_name)
+            .unwrap_or_else(|e| {
+                panic!("Couldn't open or create file: {}, err: {e}", self.file_name);
+            });
         file.write_all(content.as_bytes()).map_err(|e| {
             panic!("Couldn't write to file: {}, err: {e}", self.file_name);
         });
