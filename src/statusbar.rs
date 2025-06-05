@@ -1,19 +1,15 @@
-use crossterm::cursor;
-
 use crate::mode::Mode;
 pub struct StatusBar {
     pub file_name: String,
     pub mode: Mode,
-    pub line_number: u16,
     pub has_unsaved_changes: bool,
 }
 
 impl StatusBar {
-    pub fn new(file_name: String, mode: Mode, line_number: u16, has_unsaved_changes: bool) -> Self {
+    pub fn new(file_name: String, mode: Mode, has_unsaved_changes: bool) -> Self {
         StatusBar {
             file_name,
             mode,
-            line_number,
             has_unsaved_changes,
         }
     }
@@ -40,7 +36,7 @@ impl StatusBar {
             "{} │ {}/{}  ",
             cursor_x,
             if cursor_y <= n_lines {
-                cursor_y+1
+                cursor_y + 1
             } else {
                 n_lines
             },

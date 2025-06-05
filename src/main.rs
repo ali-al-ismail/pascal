@@ -10,7 +10,7 @@ fn main() {
         match Editor::build(&file_name) {
             Ok(mut editor) => editor.run(),
             Err(e) => {
-                eprintln!("Error: Could not open file '{}': {}", file_name, e);
+                eprintln!("Error: Could not open file '{file_name}': {e}");
                 std::process::exit(1);
             }
         }

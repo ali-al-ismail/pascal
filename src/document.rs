@@ -93,4 +93,5 @@ impl Document {
         self.lines.insert(line as usize + 1, new_line.concat());
         self.n_lines += 1;
     }
+
 }

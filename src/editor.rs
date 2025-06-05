@@ -2,7 +2,7 @@ use crate::statusbar::StatusBar;
 use crate::term::Terminal;
 use crate::{document::Document, mode::Mode};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, read};
-use std::{fs, io::Error, path::Path};
+use std::{io::Error, path::Path};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 const NAME: &str = "pascal-editor";
@@ -24,20 +24,16 @@ impl Editor {
     pub fn build(file_path: &str) -> Result<Editor, Error> {
         let docu = Document::new(file_path);
         let term = Terminal::build()?;
-        let status_bar = StatusBar {
-            file_name: Path::new(file_path)
-                .file_name()
-                .and_then(|name| name.to_str())
-                .unwrap_or(file_path)
-                .to_string(),
-            mode: Mode::NORMAL,
-            line_number: 0,
-            has_unsaved_changes: false,
-        };
+        let file_name = Path::new(file_path)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or(file_path)
+            .to_string();
+        let status_bar = StatusBar::new(file_name, Mode::Normal, false);
         Ok(Editor {
             term,
             quit: false,
-            mode: Mode::NORMAL,
+            mode: Mode::Normal,
             docu,
             cursor_x: 0,
             cursor_y: 0,
@@ -85,10 +81,10 @@ impl Editor {
         // TODO: HANDLE BASED ON MODE
         if let Some(key) = event.as_key_press_event() {
             match self.mode {
-                Mode::NORMAL => {
+                Mode::Normal => {
                     self.handle_normal_mode_key_event(key);
                 }
-                Mode::INSERT => {
+                Mode::Insert => {
                     self.handle_insert_mode_key_event(key);
                 }
             }
@@ -180,32 +176,36 @@ impl Editor {
                 self.cursor_y += 1;
                 self.cursor_x = 0;
             }
-            KeyCode::Tab => {}
+            KeyCode::Tab => {
+                let line = self.cursor_y;
+                let col = self.cursor_x;
+                for _ in 0..4 {
+                    self.docu.insert_char(' ', line, col);
+                    self.cursor_x += 1;
+                }
+            }
             _ => {}
         }
         self.update_offsets();
     }
 
     fn enter_insert(&mut self) {
-        self.status_bar.mode = Mode::INSERT;
-        self.mode = Mode::INSERT;
+        self.status_bar.mode = Mode::Insert;
+        self.mode = Mode::Insert;
     }
 
     fn enter_normal(&mut self) {
         // TODO: REFLECT MODE CHANGE IN STATUS BAR
-        self.status_bar.mode = Mode::NORMAL;
-        self.mode = Mode::NORMAL;
+        self.status_bar.mode = Mode::Normal;
+        self.mode = Mode::Normal;
     }
 
     // moves cursor based on directional key pressed
     fn handle_movement(&mut self, direction: KeyCode) {
         match direction {
             KeyCode::Char('h') | KeyCode::Left => {
-                let line = &self.docu.lines[self.cursor_y as usize];
-                let graphemes: Vec<&str> = line.graphemes(true).collect();
                 if self.cursor_x > 0 {
                     self.cursor_x -= 1;
-                    let width = graphemes[self.cursor_x as usize].width() as u16;
                 }
             }
             KeyCode::Char('j') | KeyCode::Down => {
@@ -244,7 +244,6 @@ impl Editor {
                 let line = &self.docu.lines[self.cursor_y as usize];
                 let graphemes: Vec<&str> = line.graphemes(true).collect();
                 if (self.cursor_x as usize) < graphemes.len() {
-                    let width = graphemes[self.cursor_x as usize].width() as u16;
                     self.cursor_x += 1;
                 }
             }
@@ -357,7 +356,7 @@ impl Editor {
         let empty_line = format!(
             "{:>width$} ",
             " ~ ",
-            width = self.get_line_number_width() as usize - 3
+            width = self.get_line_number_width() - 3
         );
         Terminal::set_foreground_color(crossterm::style::Color::DarkGrey)?;
         Terminal::print(&empty_line)?;
