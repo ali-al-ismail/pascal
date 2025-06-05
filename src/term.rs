@@ -1,6 +1,6 @@
 use crossterm::{
     QueueableCommand,
-    cursor::{MoveDown, MoveLeft, MoveRight, MoveTo, MoveUp},
+    cursor::MoveTo,
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal::{Clear, ClearType},
 };
@@ -39,27 +39,6 @@ impl Terminal {
 
     pub fn move_cursor(column: u16, row: u16) -> Result<(), Error> {
         stdout().queue(MoveTo(column, row))?;
-        Self::flush()?;
-        Ok(())
-    }
-
-    pub fn move_left(n: u16) -> Result<(), Error> {
-        stdout().queue(MoveLeft(n))?;
-        Self::flush()?;
-        Ok(())
-    }
-    pub fn move_right(n: u16) -> Result<(), Error> {
-        stdout().queue(MoveRight(n))?;
-        Self::flush()?;
-        Ok(())
-    }
-    pub fn move_up(n: u16) -> Result<(), Error> {
-        stdout().queue(MoveUp(n))?;
-        Self::flush()?;
-        Ok(())
-    }
-    pub fn move_down(n: u16) -> Result<(), Error> {
-        stdout().queue(MoveDown(n))?;
         Self::flush()?;
         Ok(())
     }
