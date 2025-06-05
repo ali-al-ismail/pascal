@@ -1,20 +1,36 @@
 use std::fs;
-use std::io::Error;
+use std::io::{Error, Write};
 use unicode_segmentation;
 pub struct Document {
+    pub file_name: String,
     pub lines: Vec<String>,
     pub n_lines: u16,
 }
 
 impl Document {
-    pub fn new(file_name: &str) -> Result<Self, Error> {
-        let file = fs::read_to_string(file_name)?;
+    pub fn new(file_name: &str) -> Self {
+        let file = fs::read_to_string(file_name).unwrap_or_else(|_| String::new());
         let mut lines: Vec<String> = file.lines().map(str::to_string).collect();
         if lines.is_empty() {
             lines.push(String::new());
         }
         let n_lines = lines.len() as u16;
-        Ok(Document { lines, n_lines })
+        let file_name = file_name.to_string();
+        Document {
+            file_name,
+            lines,
+            n_lines,
+        }
+    }
+
+    pub fn save(&self){
+        let content = self.lines.join("\n");
+        let mut file = fs::OpenOptions::new().write(true).create(true).truncate(true).open(&self.file_name).unwrap_or_else(|e| {
+            panic!("Couldn't open or create file: {}, err: {e}", self.file_name);
+        });
+        file.write_all(content.as_bytes()).map_err(|e| {
+            panic!("Couldn't write to file: {}, err: {e}", self.file_name);
+        });
     }
 
     pub fn insert_char(&mut self, c: char, line: u16, col: u16) {

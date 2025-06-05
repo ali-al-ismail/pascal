@@ -22,7 +22,7 @@ pub struct Editor {
 
 impl Editor {
     pub fn build(file_path: &str) -> Result<Editor, Error> {
-        let docu = Document::new(file_path)?;
+        let docu = Document::new(file_path);
         let term = Terminal::build()?;
         let status_bar = StatusBar {
             file_name: Path::new(file_path)
@@ -105,8 +105,8 @@ impl Editor {
                 self.quit = true;
             }
             (KeyCode::Char('s'), KeyModifiers::CONTROL) => {
-                //self.save();
-                self.quit = true;
+                self.docu.save();
+                self.status_bar.has_unsaved_changes = false;
             }
             (
                 KeyCode::Char('h' | 'j' | 'k' | 'l')
