@@ -6,7 +6,7 @@ use crossterm::{
 };
 use std::{
     fmt::Display,
-    io::{Error, Stdout, Write, stdout},
+    io::{Error, Write, stdout},
 };
 
 pub struct Terminal {

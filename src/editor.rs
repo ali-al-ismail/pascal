@@ -1,14 +1,7 @@
-use crossterm::{
-    QueueableCommand,
-    cursor::MoveTo,
-    event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, read},
-    queue,
-    style::Print,
-    terminal::{Clear, ClearType},
-};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, read};
 
 use crate::term::Terminal;
-use std::{fs, io::{stdout, Error, Stdout, Write}};
+use std::{fs, io::Error};
 
 const NAME: &str = "pascal-editor";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -22,7 +15,7 @@ pub struct Editor {
     term: Terminal,
     quit: bool,
     mode: Mode,
-    docu: Vec<String>
+    docu: Vec<String>,
 }
 
 impl Editor {
@@ -33,7 +26,7 @@ impl Editor {
             term,
             quit: false,
             mode: Mode::NORMAL,
-            docu
+            docu,
         })
     }
 
@@ -143,7 +136,7 @@ impl Editor {
         Ok(())
     }
 
-    fn open_file(file_name: &str) -> Result<Vec<String>, Error>{
+    fn open_file(file_name: &str) -> Result<Vec<String>, Error> {
         let file = fs::read_to_string(file_name)?;
         Ok(file.lines().map(str::to_string).collect())
     }
@@ -154,5 +147,5 @@ impl Editor {
             Terminal::print(line)?;
         }
         Ok(())
-     }
+    }
 }
