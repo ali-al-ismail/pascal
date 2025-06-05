@@ -25,6 +25,8 @@ impl StatusBar {
         } else {
             left_side.push_str("    ");
         }
+        left_side.push_str(&mode);
+        
 
         let right_side = format!(
             "{}/{}  ",
