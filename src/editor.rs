@@ -335,6 +335,7 @@ impl Editor {
             self.term.width,
             self.status_bar.has_unsaved_changes,
             self.cursor_y,
+            self.cursor_x,
             self.docu.n_lines,
         );
 
