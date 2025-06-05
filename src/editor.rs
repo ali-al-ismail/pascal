@@ -163,6 +163,7 @@ impl Editor {
                     let prev_line_len =
                         self.docu.lines[prev_line as usize].graphemes(true).count() as u16;
                     
+                    // Join the current line with the one above it.
                     self.docu.join_lines(self.cursor_y);
                     self.cursor_y = prev_line;
                     self.cursor_x = prev_line_len;
@@ -190,9 +191,6 @@ impl Editor {
 
     // moves cursor based on directional key pressed
     fn handle_movement(&mut self, direction: KeyCode) -> Result<(), Error> {
-        // TODO: WRAP CURSOR IF RIGHT OR LEFT BOUNDS REACHED ON LINE
-        // TODO: HANDLE HORIZONTAL OFFSET
-        // TODO: GO TO TOP / BOTTOM BASED ON UP OR BOTTOM BOUNDS REACHED
         match direction {
             KeyCode::Char('h') | KeyCode::Left => {
                 let line = &self.docu.lines[self.cursor_y as usize];
@@ -278,7 +276,6 @@ impl Editor {
     }
 
     fn render(&self) -> Result<(), Error> {
-        // TODO: HORIZONTAL SCROLLING
         let n_lines = self.docu.n_lines;
         let height = self.term.height;
         let width = self.term.width;

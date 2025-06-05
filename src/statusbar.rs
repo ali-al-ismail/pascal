@@ -16,7 +16,7 @@ impl StatusBar {
         }
     }
     pub fn format(&self, width: u16, unsaved: bool, cursor_y: u16, n_lines: u16) -> String {
-        let mut mode = String::from("| ");
+        let mut mode = String::from("│ ");
         mode.push_str(&self.mode.to_string());
         let mut left_side = String::from(" ");
         left_side.push_str(&self.file_name);
