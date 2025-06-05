@@ -250,10 +250,8 @@ impl Editor {
     }
 
     fn render_status_bar(&self) -> Result<(), Error> {
-        let mode = match self.status_bar.mode {
-            Mode::NORMAL => "│ NORMAL",
-            Mode::INSERT => "│ INSERT",
-        };
+        let mut mode = String::from("| ");
+        mode.push_str(&self.status_bar.mode.to_string());
         let mut left_side = String::from(" ");
         left_side.push_str(&self.status_bar.file_name);
 
@@ -262,7 +260,7 @@ impl Editor {
         } else {
             left_side.push_str("    ");
         }
-        left_side.push_str(mode);
+        left_side.push_str(&mode);
 
         let right_side = format!(
             "{}/{}  ",
