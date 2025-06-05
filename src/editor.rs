@@ -2,14 +2,10 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, read};
 
 use crate::term::Terminal;
 use std::{fs, io::Error, path::Path};
-
+use crate::statusbar::{StatusBar};
+use crate::mode::Mode;
 const NAME: &str = "pascal-editor";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-enum Mode {
-    NORMAL,
-    INSERT,
-}
 
 pub struct Editor {
     term: Terminal,
@@ -19,7 +15,7 @@ pub struct Editor {
     cursor_x: u16,
     cursor_y: u16,
     top_offset: u16,
-    status_line: StatusLine,
+    status_bar: StatusBar,
 }
 
 struct Document {
@@ -27,18 +23,12 @@ struct Document {
     n_lines: u16,
 }
 
-struct StatusLine {
-    file_name: String,
-    mode: Mode,
-    line_number: u16,
-    has_unsaved_changes: bool,
-}
 
 impl Editor {
     pub fn build(file_path: &str) -> Result<Editor, Error> {
         let docu = Self::open_file(file_path)?;
         let term = Terminal::build()?;
-        let status_line = StatusLine {
+        let status_bar = StatusBar {
             file_name: Path::new(file_path)
                 .file_name()
                 .and_then(|name| name.to_str())
@@ -56,7 +46,7 @@ impl Editor {
             cursor_x: 0,
             cursor_y: 0,
             top_offset: 0,
-            status_line,
+            status_bar,
         })
     }
 
@@ -164,13 +154,13 @@ impl Editor {
     }
 
     fn enter_insert(&mut self) {
-        self.status_line.mode = Mode::INSERT;
+        self.status_bar.mode = Mode::INSERT;
         self.mode = Mode::INSERT;
     }
 
     fn enter_normal(&mut self) {
         // TODO: REFLECT MODE CHANGE IN STATUS BAR
-        self.status_line.mode = Mode::NORMAL;
+        self.status_bar.mode = Mode::NORMAL;
         self.mode = Mode::NORMAL;
     }
 
@@ -249,7 +239,7 @@ impl Editor {
                 Terminal::print("~")?;
             }
         }
-        self.render_status_line()?;
+        self.render_status_bar()?;
         let cursor_screen_y =
             (self.cursor_y.saturating_sub(self.top_offset)).min(self.term.height - 2);
         Terminal::move_cursor(self.cursor_x, cursor_screen_y)?;
@@ -259,15 +249,15 @@ impl Editor {
         Ok(())
     }
 
-    fn render_status_line(&self) -> Result<(), Error> {
-        let mode = match self.status_line.mode {
+    fn render_status_bar(&self) -> Result<(), Error> {
+        let mode = match self.status_bar.mode {
             Mode::NORMAL => "│ NORMAL",
             Mode::INSERT => "│ INSERT",
         };
         let mut left_side = String::from(" ");
-        left_side.push_str(&self.status_line.file_name);
+        left_side.push_str(&self.status_bar.file_name);
 
-        if self.status_line.has_unsaved_changes {
+        if self.status_bar.has_unsaved_changes {
             left_side.push_str(" [+]");
         } else {
             left_side.push_str("    ");
@@ -283,7 +273,7 @@ impl Editor {
             },
             self.docu.n_lines - 1
         );
-        let status_line = format!(
+        let status_bar = format!(
             "{:<width$} │ {:>right_width$}",
             left_side,
             right_side,
@@ -295,7 +285,7 @@ impl Editor {
         Terminal::move_cursor(0, self.term.height - 1)?;
         Terminal::set_background_color(crossterm::style::Color::White)?;
         Terminal::set_foreground_color(crossterm::style::Color::Black)?;
-        Terminal::print(&status_line)?;
+        Terminal::print(&status_bar)?;
         Terminal::reset_color()?;
 
         Ok(())

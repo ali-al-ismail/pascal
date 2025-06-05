@@ -2,6 +2,8 @@ use crate::editor::Editor;
 use std::env::{self};
 mod editor;
 mod term;
+mod statusbar;
+mod mode;
 fn main() {
     if let Some(file_name) = collect_args() {
         let mut editor = Editor::build(&file_name).unwrap();
