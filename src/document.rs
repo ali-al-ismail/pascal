@@ -1,6 +1,5 @@
 use std::fs;
-use std::io::{Error, Write};
-use unicode_segmentation;
+use std::io::Write;
 pub struct Document {
     pub file_name: String,
     pub lines: Vec<String>,
@@ -94,7 +93,4 @@ impl Document {
         self.lines.insert(line as usize + 1, new_line.concat());
         self.n_lines += 1;
     }
-
-    /// Splits the line at the cursor when user presses enter
-    pub fn split_line(&mut self) {}
 }
