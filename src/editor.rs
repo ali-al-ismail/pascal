@@ -4,7 +4,7 @@ use crate::{document::Document, mode::Mode};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, read};
 use std::{fs, io::Error, path::Path};
 use unicode_segmentation::UnicodeSegmentation;
-use unicode_width::UnicodeWidthStr;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 const NAME: &str = "pascal-editor";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -130,7 +130,10 @@ impl Editor {
             (KeyCode::Esc, KeyModifiers::NONE) => {
                 self.enter_normal();
             }
-            (KeyCode::Enter | KeyCode::Backspace | KeyCode::Tab | KeyCode::Char(_), KeyModifiers::NONE) => {
+            (
+                KeyCode::Enter | KeyCode::Backspace | KeyCode::Tab | KeyCode::Char(_),
+                KeyModifiers::NONE,
+            ) => {
                 self.handle_writing_event(key.code)?;
             }
             _ => {}
@@ -138,14 +141,22 @@ impl Editor {
         Ok(())
     }
 
-    fn handle_writing_event(&mut self, key: KeyCode) -> Result<(), Error>{
-        match key{
-            KeyCode::Char(c) => {self.docu.insert_char();},
-            KeyCode::Backspace => {self.docu.remove_char();},
-            KeyCode::Enter => {self.docu.newline();} // TODO: newline should determine whether to split current line or move it down
+    fn handle_writing_event(&mut self, key: KeyCode) -> Result<(), Error> {
+        match key {
+            KeyCode::Char(c) => {
+                let line = self.cursor_y;
+                let col = self.cursor_x;
+                self.docu.insert_char(c, line, col);
+                self.cursor_x += c.width().unwrap() as u16; // Move cursor right by the width of the character
+            }
+            KeyCode::Backspace => {
+                self.docu.remove_char();
+            }
+            KeyCode::Enter => {
+                self.docu.newline();
+            } // TODO: newline should determine whether to split current line or move it down
             KeyCode::Tab => {}
             _ => {}
-
         }
 
         Ok(())
@@ -188,7 +199,6 @@ impl Editor {
                         self.cursor_x = new_len;
                     }
 
-               
                     if self.cursor_y >= self.top_offset + self.term.height - 1 {
                         self.top_offset += 1;
                     } else {
@@ -207,7 +217,6 @@ impl Editor {
                         self.cursor_x = new_len;
                     }
 
-                 
                     if self.cursor_y < self.top_offset {
                         self.top_offset = self.top_offset.saturating_sub(1);
                     } else {
