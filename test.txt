@@ -1,0 +1,9 @@
+abcde
+áéíóú      # Latin letters with combining accents
+🙂😀😁😂🤣      # Emojis (wide graphemes)
+你好吗世界      # CJK (Chinese) characters (double-width)
+👍🏽👋🏻🙏🏼      # Emojis with skin tone modifiers (multi-codepoint graphemes)
+👨‍👩‍👧‍👦      # Family emoji (multi-codepoint, single grapheme)
+a🙂你é👍🏽     # Mixed ASCII, emoji, CJK, combining accent, emoji with modifier
+Z͑̾̏̑̿̍̚      # Z with multiple combining marks
+🇺🇳🇨🇦🇯🇵      # Regional indicator symbols (flag emojis)

@@ -1,9 +1,10 @@
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, read};
-
-use crate::{document::Document, mode::Mode};
 use crate::statusbar::StatusBar;
 use crate::term::Terminal;
+use crate::{document::Document, mode::Mode};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, read};
 use std::{fs, io::Error, path::Path};
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 const NAME: &str = "pascal-editor";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -17,7 +18,6 @@ pub struct Editor {
     top_offset: u16,
     status_bar: StatusBar,
 }
-
 
 impl Editor {
     pub fn build(file_path: &str) -> Result<Editor, Error> {
@@ -149,11 +149,15 @@ impl Editor {
         // TODO: WRAP CURSOR IF RIGHT OR LEFT BOUNDS REACHED ON LINE
         // TODO: HANDLE HORIZONTAL OFFSET
         // TODO: GO TO TOP / BOTTOM BASED ON UP OR BOTTOM BOUNDS REACHED
-        // TODO: HANDLE USING GRAPHEME CLUSTERS RATHER
         match direction {
             KeyCode::Char('h') | KeyCode::Left => {
-                Terminal::move_left(1)?;
-                self.cursor_x = self.cursor_x.saturating_sub(1);
+                let line = &self.docu.lines[self.cursor_y as usize];
+                let graphemes: Vec<&str> = line.graphemes(true).collect();
+                if self.cursor_x > 0 {
+                    self.cursor_x -= 1;
+                    let width = graphemes[self.cursor_x as usize].width() as u16;
+                    Terminal::move_left(width)?;
+                }
             }
             KeyCode::Char('j') | KeyCode::Down => {
                 if self.cursor_y + 1 < self.docu.n_lines {
@@ -178,8 +182,13 @@ impl Editor {
                 }
             }
             KeyCode::Char('l') | KeyCode::Right => {
-                Terminal::move_right(1)?;
-                self.cursor_x += 1;
+                let line = &self.docu.lines[self.cursor_y as usize];
+                let graphemes: Vec<&str> = line.graphemes(true).collect();
+                if (self.cursor_x as usize) < graphemes.len() {
+                    let width = graphemes[self.cursor_x as usize].width() as u16;
+                    self.cursor_x += 1;
+                    Terminal::move_right(width)?;
+                }
             }
             _ => {}
         }
@@ -195,7 +204,6 @@ impl Editor {
             self.top_offset = self.cursor_y - height + 1;
         }
     }
-
 
     fn render(&self) -> Result<(), Error> {
         // TODO: HORIZONTAL SCROLLING
@@ -216,7 +224,14 @@ impl Editor {
         self.render_status_bar()?;
         let cursor_screen_y =
             (self.cursor_y.saturating_sub(self.top_offset)).min(self.term.height - 2);
-        Terminal::move_cursor(self.cursor_x, cursor_screen_y)?;
+        let line = &self.docu.lines[self.cursor_y as usize];
+        let graphemes: Vec<&str> = line.graphemes(true).collect();
+        let display_col: u16 = graphemes
+            .iter()
+            .take(self.cursor_x as usize)
+            .map(|g| g.width() as u16)
+            .sum();
+        Terminal::move_cursor(display_col, cursor_screen_y)?;
 
         Terminal::flush()?;
 
