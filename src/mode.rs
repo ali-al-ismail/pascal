@@ -5,8 +5,6 @@ pub enum Mode {
     INSERT,
 }
 
-
-
 impl fmt::Display for Mode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

@@ -1,9 +1,9 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, read};
 
+use crate::mode::Mode;
+use crate::statusbar::StatusBar;
 use crate::term::Terminal;
 use std::{fs, io::Error, path::Path};
-use crate::statusbar::{StatusBar};
-use crate::mode::Mode;
 const NAME: &str = "pascal-editor";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -22,7 +22,6 @@ struct Document {
     lines: Vec<String>,
     n_lines: u16,
 }
-
 
 impl Editor {
     pub fn build(file_path: &str) -> Result<Editor, Error> {
@@ -250,33 +249,11 @@ impl Editor {
     }
 
     fn render_status_bar(&self) -> Result<(), Error> {
-        let mut mode = String::from("| ");
-        mode.push_str(&self.status_bar.mode.to_string());
-        let mut left_side = String::from(" ");
-        left_side.push_str(&self.status_bar.file_name);
-
-        if self.status_bar.has_unsaved_changes {
-            left_side.push_str(" [+]");
-        } else {
-            left_side.push_str("    ");
-        }
-        left_side.push_str(&mode);
-
-        let right_side = format!(
-            "{}/{}  ",
-            if self.cursor_y <= self.docu.n_lines {
-                self.cursor_y
-            } else {
-                self.docu.n_lines
-            },
-            self.docu.n_lines - 1
-        );
-        let status_bar = format!(
-            "{:<width$} │ {:>right_width$}",
-            left_side,
-            right_side,
-            width = self.term.width as usize - right_side.len() - 3,
-            right_width = right_side.len()
+        let status_bar = self.status_bar.format(
+            self.term.width,
+            self.status_bar.has_unsaved_changes,
+            self.cursor_y,
+            self.docu.n_lines,
         );
 
         // print status line at the bottom
