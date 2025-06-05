@@ -138,6 +138,9 @@ impl Editor {
                 self.handle_writing_event(key.code);
                 self.status_bar.has_unsaved_changes = true;
             }
+            (KeyCode::Left | KeyCode::Right | KeyCode::Up | KeyCode::Down, KeyModifiers::NONE) => {
+                self.handle_movement(key.code)?;
+            }
             _ => {}
         }
         Ok(())
@@ -170,7 +173,6 @@ impl Editor {
                     self.cursor_y = prev_line;
                     self.cursor_x = prev_line_len;
                 }
-                
             }
             KeyCode::Enter => {
                 let line = self.cursor_y;
