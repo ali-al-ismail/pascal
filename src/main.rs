@@ -1,8 +1,17 @@
 use crate::editor::Editor;
-
+use std::{env::{self, Args}, process::exit};
 mod editor;
 mod term;
 fn main() {
-    let mut editor = Editor::build().unwrap();
-    editor.run();
+    if let Some(file_name) = collect_args() {
+        let mut editor = Editor::build(&file_name).unwrap();
+        editor.run();
+    }
+    else{
+        panic!("Couldn't parse file location...");
+    }
+}
+
+fn collect_args() -> Option<String> {
+    env::args().nth(1)
 }

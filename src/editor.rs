@@ -8,7 +8,7 @@ use crossterm::{
 };
 
 use crate::term::Terminal;
-use std::io::{Error, Stdout, Write, stdout};
+use std::{fs, io::{stdout, Error, Stdout, Write}};
 
 const NAME: &str = "pascal-editor";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -21,16 +21,19 @@ enum Mode {
 pub struct Editor {
     term: Terminal,
     quit: bool,
-    mode: Mode, //docu:
+    mode: Mode,
+    docu: Vec<String>
 }
 
 impl Editor {
-    pub fn build() -> Result<Editor, Error> {
+    pub fn build(file_path: &str) -> Result<Editor, Error> {
+        let docu = Self::open_file(file_path)?;
         let term = Terminal::build()?;
         Ok(Editor {
             term,
             quit: false,
             mode: Mode::NORMAL,
+            docu
         })
     }
 
@@ -39,6 +42,7 @@ impl Editor {
             panic!("Couldn't welcome because of: {e}");
         }
         // main editor loop
+        self.render();
         loop {
             if self.quit {
                 break;
@@ -61,7 +65,7 @@ impl Editor {
 
     fn welcome(&self) -> Result<(), Error> {
         // tildes at the left side
-        self.tildize()?;
+        //self.tildize()?;
 
         // welcome message
         let welcome_message = format!("{NAME} version-{VERSION}");
@@ -138,4 +142,17 @@ impl Editor {
         }
         Ok(())
     }
+
+    fn open_file(file_name: &str) -> Result<Vec<String>, Error>{
+        let file = fs::read_to_string(file_name)?;
+        Ok(file.lines().map(str::to_string).collect())
+    }
+
+    fn render(&self) -> Result<(), Error> {
+        for (i, line) in self.docu.iter().enumerate() {
+            Terminal::move_cursor(0, i as u16)?;
+            Terminal::print(line)?;
+        }
+        Ok(())
+     }
 }
