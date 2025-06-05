@@ -66,20 +66,7 @@ impl Editor {
         }
     }
 
-    fn tildize(&self) -> Result<(), Error> {
-        for i in 0..self.term.height {
-            Terminal::move_cursor(0, i)?;
-            Terminal::print("~")?;
-        }
-        Terminal::flush()?;
-        Ok(())
-    }
-
     fn welcome(&self) -> Result<(), Error> {
-        // tildes at the left side
-        //self.tildize()?;
-
-        // welcome message
         let welcome_message = format!("{NAME} version-{VERSION}");
         let length = welcome_message.len() as u16;
         Terminal::move_cursor(((self.term.width - length) - 1) / 2, self.term.height / 3)?;
