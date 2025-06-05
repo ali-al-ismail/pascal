@@ -97,6 +97,7 @@ impl Editor {
                     self.render()?;
                 }
                 Mode::INSERT => {
+                    self.handle_insert_mode_key_event(key)?;
                     Terminal::clear()?;
                     self.render()?;
                 }
@@ -126,18 +127,39 @@ impl Editor {
                 self.handle_movement(key.code)?;
             }
             (KeyCode::Char('i'), KeyModifiers::NONE) => {
-                //self.insertmode
+                self.enter_insert();
             }
             _ => {}
         }
         Ok(())
     }
 
+    fn handle_insert_mode_key_event(&mut self, key: KeyEvent) -> Result<(), Error> {
+        match (key.code, key.modifiers) {
+            (KeyCode::Esc, KeyModifiers::NONE) => {
+                self.enter_normal();
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn enter_insert(&mut self) {
+        // TODO: REFLECT MODE CHANGE IN STATUS BAR
+        self.mode = Mode::INSERT;
+    }
+
+    fn enter_normal(&mut self) {
+        // TODO: REFLECT MODE CHANGE IN STATUS BAR
+        self.mode = Mode::NORMAL;
+    }
+
     // moves cursor based on directional key pressed
     fn handle_movement(&mut self, direction: KeyCode) -> Result<(), Error> {
-        // TODO: MOVE BASED CURSOR BASED ON DIRECTIONAL KEY
-        // WRAP CURSOR IF RIGHT OR LEFT BOUNDS REACHED
-        // GO TO TOP / BOTTOM BASED ON UP OR BOTTOM BOUNDS REACHED
+        // TODO: WRAP CURSOR IF RIGHT OR LEFT BOUNDS REACHED ON LINE
+        // TODO: HANDLE HORIZONTAL OFFSET
+        // TODO: GO TO TOP / BOTTOM BASED ON UP OR BOTTOM BOUNDS REACHED
+        // TODO: HANDLE USING GRAPHEME CLUSTERS RATHER
         match direction {
             KeyCode::Char('h') | KeyCode::Left => {
                 Terminal::move_left(1)?;
@@ -179,6 +201,7 @@ impl Editor {
     }
 
     fn render(&self) -> Result<(), Error> {
+        // TODO: HORIZONTAL SCROLLING
         let n_lines = self.docu.n_lines;
         let height = self.term.height;
         let width = self.term.width;
