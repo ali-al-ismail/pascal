@@ -263,11 +263,13 @@ impl Editor {
     }
 
     fn update_left_offset(&mut self) {
-        let width = self.term.width;
+        let line_number_width = (self.docu.n_lines.to_string().len() + 2) as u16;
+        let available_width = self.term.width.saturating_sub(line_number_width);
+
         if self.cursor_x < self.left_offset {
             self.left_offset = self.cursor_x;
-        } else if self.cursor_x >= self.left_offset + width {
-            self.left_offset = self.cursor_x - width + 1;
+        } else if self.cursor_x >= self.left_offset + available_width {
+            self.left_offset = self.cursor_x - available_width + 1;
         }
     }
 
@@ -276,48 +278,86 @@ impl Editor {
         self.update_left_offset();
     }
 
+    /// Renders the lines of the document and the cursor
     fn render(&self) -> Result<(), Error> {
         let n_lines = self.docu.n_lines;
         let height = self.term.height;
         let width = self.term.width;
 
+        let line_number_width = (n_lines.to_string().len() + 3) as u16; // spaces needed for line numbers +3 for " | "
+
         for row in 0..height - 1 {
             Terminal::move_cursor(0, row)?;
-            let doc_row = self.top_offset + row;
+            let doc_row = self.top_offset + row; // for vertical scrolling
+
             if doc_row < n_lines {
+                // line number
+                let line_num = format!(
+                    "{:>width$}",
+                    doc_row + 1,
+                    width = line_number_width as usize - 3
+                );
+
+                // if the current line is the cursor line, set color to white, otherwise dark grey
+                if doc_row == self.cursor_y {
+                    Terminal::set_foreground_color(crossterm::style::Color::White)?;
+                } else {
+                    Terminal::set_foreground_color(crossterm::style::Color::DarkGrey)?;
+                }
+                Terminal::print(&line_num)?;
+
+                // Always render the separator in dark grey because it looks better
+                Terminal::set_foreground_color(crossterm::style::Color::DarkGrey)?;
+                Terminal::print(" │ ")?;
+                Terminal::reset_color()?;
+
+                // Render the actual line content
                 let line = &self.docu.lines[doc_row as usize];
                 let graphemes: Vec<&str> = line.graphemes(true).collect();
                 let mut rendered_line = String::new();
-                let mut width_remaining = 0;
+                let mut width_remaining = 0; // for horizontal scrolling
+                let available_width = width.saturating_sub(line_number_width);
+
+                // set up the line content while skipping left_offset number of graphemes
                 for g in graphemes.iter().skip(self.left_offset as usize) {
                     let graphene_width = g.width() as u16;
-                    if width_remaining + graphene_width > width {
-                        break; // stop rendering if we exceed the terminal width
+                    if width_remaining + graphene_width > available_width {
+                        break; // stop rendering if exceed the available width
                     }
                     rendered_line.push_str(g);
                     width_remaining += graphene_width;
                 }
                 Terminal::print(&rendered_line)?;
             } else {
-                Terminal::print("~")?;
+                // empty line gets a ~
+                let line_number =
+                    format!("{:>width$} ", " ~ ", width = line_number_width as usize - 3);
+                Terminal::set_foreground_color(crossterm::style::Color::DarkGrey)?;
+                Terminal::print(&line_number)?;
+                Terminal::reset_color()?;
             }
         }
+
         self.render_status_bar()?;
+
+        // where the cursor should be vertically
         let cursor_screen_y =
             (self.cursor_y.saturating_sub(self.top_offset)).min(self.term.height - 2);
         let line = &self.docu.lines[self.cursor_y as usize];
         let graphemes: Vec<&str> = line.graphemes(true).collect();
-        // Calculate display_col relative to left_offset
-        let display_col: u16 = graphemes
-            .iter()
-            .skip(self.left_offset as usize)
-            .take(self.cursor_x.saturating_sub(self.left_offset) as usize)
-            .map(|g| g.width() as u16)
-            .sum();
+
+        // where the cursor should be horizontally
+        let display_col: u16 = line_number_width
+            + graphemes
+                .iter()
+                .skip(self.left_offset as usize)
+                .take(self.cursor_x.saturating_sub(self.left_offset) as usize)
+                .map(|g| g.width() as u16)
+                .sum::<u16>();
+
         Terminal::move_cursor(display_col, cursor_screen_y)?;
 
         Terminal::flush()?;
-
         Ok(())
     }
 
