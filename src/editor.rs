@@ -123,13 +123,13 @@ impl Editor {
                 Terminal::move_left(1)?;
             }
             (KeyCode::Char('j') | KeyCode::Right) => {
-                Terminal::move_right(1)?;
-            }
-            (KeyCode::Char('k') | KeyCode::Down) => {
                 Terminal::move_down(1)?;
             }
-            (KeyCode::Char('l') | KeyCode::Up) => {
+            (KeyCode::Char('k') | KeyCode::Down) => {
                 Terminal::move_up(1)?;
+            }
+            (KeyCode::Char('l') | KeyCode::Up) => {
+                Terminal::move_right(1)?;
             }
             _ => {}
         }
