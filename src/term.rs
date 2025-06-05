@@ -1,7 +1,7 @@
 use crossterm::{
     QueueableCommand,
     cursor::{MoveDown, MoveLeft, MoveRight, MoveTo, MoveUp},
-    style::Print,
+    style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
     terminal::{Clear, ClearType},
 };
 use std::{
@@ -60,6 +60,22 @@ impl Terminal {
     }
     pub fn move_down(n: u16) -> Result<(), Error> {
         stdout().queue(MoveDown(n))?;
+        Self::flush()?;
+        Ok(())
+    }
+
+    pub fn set_background_color(color: Color) -> Result<(), Error> {
+        stdout().queue(SetBackgroundColor(color))?;
+        Self::flush()?;
+        Ok(())
+    }
+    pub fn set_foreground_color(color: Color) -> Result<(), Error> {
+        stdout().queue(SetForegroundColor(color))?;
+        Self::flush()?;
+        Ok(())
+    }
+    pub fn reset_color() -> Result<(), Error> {
+        stdout().queue(ResetColor)?;
         Self::flush()?;
         Ok(())
     }
