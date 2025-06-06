@@ -1,23 +1,24 @@
+use crate::render::Renderer;
 use crate::statusbar::StatusBar;
 use crate::term::Terminal;
 use crate::{document::Document, mode::Mode};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, read};
 use std::{io::Error, path::Path};
 use unicode_segmentation::UnicodeSegmentation;
-use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+use unicode_width::UnicodeWidthChar;
 const NAME: &str = "pascal-editor";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Editor {
-    term: Terminal,
+    pub term: Terminal,
     quit: bool,
     mode: Mode,
-    docu: Document,
-    cursor_x: u16,
-    cursor_y: u16,
-    top_offset: u16,
-    left_offset: u16,
-    status_bar: StatusBar,
+    pub docu: Document,
+    pub cursor_x: u16,
+    pub cursor_y: u16,
+    pub top_offset: u16,
+    pub left_offset: u16,
+    pub status_bar: StatusBar,
 }
 
 impl Editor {
@@ -63,6 +64,11 @@ impl Editor {
                 panic!("Error handling key presses: {e}");
             }
         }
+    }
+
+    fn render(&self) -> Result<(), Error> {
+        Renderer::new(self).render()?;
+        Ok(())
     }
 
     fn welcome(&self) -> Result<(), Error> {
@@ -322,132 +328,5 @@ impl Editor {
         self.update_left_offset();
     }
 
-    /// Renders the lines of the document and the cursor
-    fn render(&self) -> Result<(), Error> {
-        self.render_document_lines()?;
-        self.render_status_bar()?;
-        self.render_cursor()?;
-        Terminal::flush()?;
-        Ok(())
-    }
-
-    fn render_document_lines(&self) -> Result<(), Error> {
-        let height = self.term.height;
-        for row in 0..height - 1 {
-            Terminal::move_cursor(0, row)?;
-            let doc_row = self.top_offset + row; // for vertical scrolling
-
-            if doc_row < self.docu.n_lines {
-                self.render_content_line(doc_row)?;
-            } else {
-                self.render_empty_line()?;
-            }
-        }
-        self.render_cursor()?;
-        Ok(())
-    }
-
-    fn render_content_line(&self, doc_row: u16) -> Result<(), Error> {
-        self.render_line_number(doc_row)?;
-        self.render_line_content(doc_row)?;
-
-        Ok(())
-    }
-
-    fn render_line_number(&self, row: u16) -> Result<(), Error> {
-        let line_number = row + 1;
-        let line_number_str = format!(
-            "{:>width$}",
-            line_number,
-            width = self.get_line_number_width()
-        );
-        // render the line number
-        if row == self.cursor_y {
-            Terminal::set_foreground_color(crossterm::style::Color::White)?;
-        } else {
-            Terminal::set_foreground_color(crossterm::style::Color::DarkGrey)?;
-        }
-        Terminal::print(line_number_str)?;
-
-        // render the separator
-        Terminal::set_foreground_color(crossterm::style::Color::DarkGrey)?;
-        Terminal::print(" │ ")?;
-        Terminal::reset_color()?;
-        Ok(())
-    }
-
-    fn render_line_content(&self, doc_row: u16) -> Result<(), Error> {
-        let width = self.term.width;
-        let line = &self.docu.lines[doc_row as usize];
-        let graphemes: Vec<&str> = line.graphemes(true).collect();
-        let mut rendered_line = String::new();
-        let mut width_remaining = 0; // for horizontal scrolling
-        let available_width = width.saturating_sub(self.get_line_number_width() as u16);
-
-        // set up the line content while skipping left_offset number of graphemes
-        for g in graphemes.iter().skip(self.left_offset as usize) {
-            let graphene_width = g.width() as u16;
-            if width_remaining + graphene_width > available_width {
-                break; // stop rendering if exceed the available width
-            }
-            rendered_line.push_str(g);
-            width_remaining += graphene_width;
-        }
-        Terminal::print(&rendered_line)?;
-        Ok(())
-    }
-
-    fn render_empty_line(&self) -> Result<(), Error> {
-        let empty_line = format!(
-            "{:>width$} ",
-            " ~ ",
-            width = self.get_line_number_width() - 3
-        );
-        Terminal::set_foreground_color(crossterm::style::Color::DarkGrey)?;
-        Terminal::print(&empty_line)?;
-        Terminal::reset_color()?;
-        Ok(())
-    }
-
-    fn get_line_number_width(&self) -> usize {
-        self.docu.n_lines.to_string().len() + 3
-    }
-
-    fn render_cursor(&self) -> Result<(), Error> {
-        let cursor_screen_y =
-            (self.cursor_y.saturating_sub(self.top_offset)).min(self.term.height - 1);
-        let line = &self.docu.lines[self.cursor_y as usize];
-        let graphemes: Vec<&str> = line.graphemes(true).collect();
-        let line_number_width = self.get_line_number_width() as u16;
-        let mut cursor_screen_x = line_number_width
-            + graphemes
-                .iter()
-                .skip(self.left_offset as usize)
-                .take(self.cursor_x.saturating_sub(self.left_offset) as usize)
-                .map(|g| g.width() as u16)
-                .sum::<u16>();
-        cursor_screen_x += 3; // for the line number and separator
-        Terminal::move_cursor(cursor_screen_x, cursor_screen_y)?;
-        Ok(())
-    }
-
-    fn render_status_bar(&self) -> Result<(), Error> {
-        let status_bar = self.status_bar.format(
-            self.term.width,
-            self.status_bar.has_unsaved_changes,
-            self.cursor_y,
-            self.cursor_x,
-            self.docu.n_lines,
-        );
-
-        // print status line at the bottom
-        Terminal::move_cursor(0, self.term.height - 2)?;
-        Terminal::set_background_color(crossterm::style::Color::White)?;
-        Terminal::set_foreground_color(crossterm::style::Color::Black)?;
-        Terminal::clear_current_line()?;
-        Terminal::print(&status_bar)?;
-        Terminal::reset_color()?;
-
-        Ok(())
-    }
+    
 }
