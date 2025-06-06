@@ -57,6 +57,7 @@ impl Editor {
         loop {
             if self.quit {
                 Terminal::clear().unwrap();
+                Terminal::move_cursor(0, 0).unwrap();
                 break;
             }
 
