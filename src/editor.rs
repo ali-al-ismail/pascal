@@ -91,7 +91,15 @@ impl Editor {
             Terminal::clear()?;
             self.render()?;
         }
-        // TODO: HANDLE RESIZE EVENT TO RESIZE WIDTH HEIGHT OF TERM
+        // handle resize events
+        if let Some(size) = event.as_resize_event() {
+            let (width, height) = size;
+            self.term.width = width;
+            self.term.height = height;
+            self.update_offsets();
+            Terminal::clear()?;
+            self.render()?;
+        }
         Ok(())
     }
 
@@ -242,7 +250,7 @@ impl Editor {
                         self.cursor_x = new_len;
                     }
 
-                    if self.cursor_y >= self.top_offset + self.term.height - 1 {
+                    if self.cursor_y >= self.top_offset + self.term.height - 2 {
                         self.top_offset += 1;
                     }
                 }
@@ -431,9 +439,10 @@ impl Editor {
         );
 
         // print status line at the bottom
-        Terminal::move_cursor(0, self.term.height - 1)?;
+        Terminal::move_cursor(0, self.term.height - 2)?;
         Terminal::set_background_color(crossterm::style::Color::White)?;
         Terminal::set_foreground_color(crossterm::style::Color::Black)?;
+        Terminal::clear_current_line()?;
         Terminal::print(&status_bar)?;
         Terminal::reset_color()?;
 

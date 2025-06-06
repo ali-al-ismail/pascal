@@ -125,7 +125,7 @@ impl Document {
         // successfully left next word, now find next one
         while cur_col < len {
             let cur_char = graphemes[cur_col].chars().next().unwrap_or(' ');
-            if is_word_char(cur_char){
+            if is_word_char(cur_char) {
                 break;
             }
             cur_col += 1;
@@ -136,14 +136,16 @@ impl Document {
 
     pub fn prev_word(&self, line: u16, col: u16) -> (u16, u16) {
         let line_str = self.lines[line as usize].clone();
-        let graphemes: Vec<&str> = UnicodeSegmentation::graphemes(line_str.as_str(), true).collect();
+        let graphemes: Vec<&str> =
+            UnicodeSegmentation::graphemes(line_str.as_str(), true).collect();
         let mut cur_col = col as usize;
 
         // are we on the first character of the current line? if so move to the previous line if it exists
         if cur_col == 0 {
             if line > 0 {
                 let prev_line_str = self.lines[(line - 1) as usize].clone();
-                let prev_graphemes: Vec<&str> = UnicodeSegmentation::graphemes(prev_line_str.as_str(), true).collect();
+                let prev_graphemes: Vec<&str> =
+                    UnicodeSegmentation::graphemes(prev_line_str.as_str(), true).collect();
                 return (line - 1, prev_graphemes.len() as u16);
             }
             return (line, 0);

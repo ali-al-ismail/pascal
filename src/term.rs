@@ -58,4 +58,9 @@ impl Terminal {
         Self::flush()?;
         Ok(())
     }
+
+    pub fn clear_current_line() -> Result<(), Error> {
+        stdout().queue(Clear(ClearType::CurrentLine))?;
+        Ok(())
+    }
 }
