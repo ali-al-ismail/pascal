@@ -314,7 +314,7 @@ impl Editor {
 
     fn update_left_offset(&mut self) {
       
-        let line_number_width = (self.docu.n_lines.to_string().len() + 2) as u16;
+        let line_number_width = (self.docu.n_lines.to_string().len() + 3) as u16;
         let available_width = self.term.width.saturating_sub(line_number_width);
 
         if self.cursor_x < self.left_offset {

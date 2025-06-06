@@ -74,7 +74,7 @@ impl<'a> Renderer<'a> {
         let graphemes: Vec<&str> = line.graphemes(true).collect();
         let mut rendered_line = String::new();
         let mut width_remaining = 0; // for horizontal scrolling
-        let available_width = width.saturating_sub(self.get_line_number_width() as u16);
+        let available_width = width.saturating_sub((self.get_line_number_width() +3) as u16);
 
         // set up the line content while skipping left_offset number of graphemes
         for g in graphemes.iter().skip(self.editor.left_offset as usize) {
@@ -91,9 +91,9 @@ impl<'a> Renderer<'a> {
 
     fn render_empty_line(&self) -> Result<(), Error> {
         let empty_line = format!(
-            "{:>width$} ",
-            " ~ ",
-            width = self.get_line_number_width() - 3
+            "{:>width$}",
+            "~",
+            width = self.get_line_number_width()
         );
         Terminal::set_foreground_color(crossterm::style::Color::DarkGrey)?;
         Terminal::print(&empty_line)?;
@@ -102,7 +102,7 @@ impl<'a> Renderer<'a> {
     }
 
     fn get_line_number_width(&self) -> usize {
-        self.editor.docu.n_lines.to_string().len() + 3
+        self.editor.docu.n_lines.to_string().len()
     }
 
     fn render_cursor(&self) -> Result<(), Error> {
@@ -110,15 +110,14 @@ impl<'a> Renderer<'a> {
             (self.editor.cursor_y.saturating_sub(self.editor.top_offset)).min(self.editor.term.height - 1);
         let line = &self.editor.docu.lines[self.editor.cursor_y as usize];
         let graphemes: Vec<&str> = line.graphemes(true).collect();
-        let line_number_width = self.get_line_number_width() as u16;
-        let mut cursor_screen_x = line_number_width
+        let line_number_width = (self.get_line_number_width() + 3) as u16;
+        let cursor_screen_x = line_number_width
             + graphemes
                 .iter()
                 .skip(self.editor.left_offset as usize)
                 .take(self.editor.cursor_x.saturating_sub(self.editor.left_offset) as usize)
                 .map(|g| g.width() as u16)
                 .sum::<u16>();
-        cursor_screen_x += 3; // for the line number and separator
         Terminal::move_cursor(cursor_screen_x, cursor_screen_y)?;
         Ok(())
     }
@@ -134,7 +133,7 @@ impl<'a> Renderer<'a> {
 
         // print status line at the bottom
         Terminal::move_cursor(0, self.editor.term.height - 2)?;
-        Terminal::set_background_color(crossterm::style::Color::White)?;
+        Terminal::set_background_color(crossterm::style::Color::DarkBlue)?;
         Terminal::set_foreground_color(crossterm::style::Color::Black)?;
         Terminal::clear_current_line()?;
         Terminal::print(&status_bar)?;
