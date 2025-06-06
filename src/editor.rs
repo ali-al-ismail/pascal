@@ -296,15 +296,17 @@ impl Editor {
     }
 
     fn update_top_offset(&mut self) {
-        let height = self.term.height;
+        let margin = 4; // how many lines should be visible below the cursor at the bottom of the screen
+        let bottom_content = self.term.height - 2; // the bottom content area which includes the status bar and the line below it
         if self.cursor_y < self.top_offset {
             self.top_offset = self.cursor_y;
-        } else if self.cursor_y >= self.top_offset + height {
-            self.top_offset = self.cursor_y - height + 1;
+        } else if self.cursor_y >= self.top_offset + bottom_content.saturating_sub(margin) {
+            self.top_offset = self.cursor_y .saturating_sub(bottom_content.saturating_sub(margin + 1));
         }
     }
 
     fn update_left_offset(&mut self) {
+      
         let line_number_width = (self.docu.n_lines.to_string().len() + 2) as u16;
         let available_width = self.term.width.saturating_sub(line_number_width);
 
