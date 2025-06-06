@@ -1,5 +1,6 @@
 use std::fs;
 use std::io::Write;
+use unicode_segmentation::UnicodeSegmentation;
 pub struct Document {
     pub file_name: String,
     pub lines: Vec<String>,
@@ -43,7 +44,7 @@ impl Document {
         }
         let line_str = &mut self.lines[line as usize];
         let mut graphemes: Vec<&str> =
-            unicode_segmentation::UnicodeSegmentation::graphemes(line_str.as_str(), true).collect();
+            UnicodeSegmentation::graphemes(line_str.as_str(), true).collect();
         if col as usize > graphemes.len() {
             return;
         }
@@ -58,7 +59,7 @@ impl Document {
         }
         let line_str = &mut self.lines[line as usize];
         let mut graphemes: Vec<&str> =
-            unicode_segmentation::UnicodeSegmentation::graphemes(line_str.as_str(), true).collect();
+            UnicodeSegmentation::graphemes(line_str.as_str(), true).collect();
         if col as usize >= graphemes.len() {
             return;
         }
@@ -80,7 +81,7 @@ impl Document {
     pub fn newline(&mut self, line: u16, col: u16) {
         let line_str = self.lines[line as usize].clone();
         let mut graphemes: Vec<&str> =
-            unicode_segmentation::UnicodeSegmentation::graphemes(line_str.as_str(), true).collect();
+            UnicodeSegmentation::graphemes(line_str.as_str(), true).collect();
         // case 1: user tries to add a new line at the end of the current line
         if col as usize == graphemes.len() {
             self.lines.insert(line as usize + 1, String::new());
@@ -94,4 +95,80 @@ impl Document {
         self.n_lines += 1;
     }
 
+    /// finds the next word operating on the following boundaries: whitespace, punctuation, any non-word character or underscore
+    pub fn next_word(&self, line: u16, col: u16) -> (u16, u16) {
+        let line_str = self.lines[line as usize].clone();
+        let graphemes: Vec<&str> =
+            UnicodeSegmentation::graphemes(line_str.as_str(), true).collect();
+        let mut cur_col = col as usize;
+        let len = graphemes.len();
+        // are we on the last character of the line? if so move to the next one if there is one
+        if cur_col >= len {
+            if line + 1 < self.n_lines {
+                return (line + 1, 0);
+            }
+            return (line, len as u16);
+        }
+        let is_word_char = |c: char| c.is_alphanumeric() || c == '_';
+        // find the next non-word character aka exit our current word
+        let cur_char = graphemes[cur_col].chars().next().unwrap_or(' '); // ' ' just incase there is no char
+        if is_word_char(cur_char) {
+            while cur_col < len {
+                let cur_char = graphemes[cur_col].chars().next().unwrap_or(' ');
+                if !is_word_char(cur_char) {
+                    break;
+                }
+                cur_col += 1;
+            }
+        }
+
+        // successfully left next word, now find next one
+        while cur_col < len {
+            let cur_char = graphemes[cur_col].chars().next().unwrap_or(' ');
+            if is_word_char(cur_char){
+                break;
+            }
+            cur_col += 1;
+        }
+
+        (line, cur_col as u16)
+    }
+
+    pub fn prev_word(&self, line: u16, col: u16) -> (u16, u16) {
+        let line_str = self.lines[line as usize].clone();
+        let graphemes: Vec<&str> = UnicodeSegmentation::graphemes(line_str.as_str(), true).collect();
+        let mut cur_col = col as usize;
+
+        // are we on the first character of the current line? if so move to the previous line if it exists
+        if cur_col == 0 {
+            if line > 0 {
+                let prev_line_str = self.lines[(line - 1) as usize].clone();
+                let prev_graphemes: Vec<&str> = UnicodeSegmentation::graphemes(prev_line_str.as_str(), true).collect();
+                return (line - 1, prev_graphemes.len() as u16);
+            }
+            return (line, 0);
+        }
+
+        let is_word_char = |c: char| c.is_alphanumeric() || c == '_';
+
+        // escape our current word
+        while cur_col > 0 {
+            let prev_char = graphemes[cur_col - 1].chars().next().unwrap_or(' ');
+            if is_word_char(prev_char) {
+                break;
+            }
+            cur_col -= 1;
+        }
+
+        // go to the previous one
+        while cur_col > 0 {
+            let prev_char = graphemes[cur_col - 1].chars().next().unwrap_or(' ');
+            if !is_word_char(prev_char) {
+                break;
+            }
+            cur_col -= 1;
+        }
+
+        (line, cur_col as u16)
+    }
 }

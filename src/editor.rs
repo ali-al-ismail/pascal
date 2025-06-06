@@ -105,7 +105,7 @@ impl Editor {
                 self.status_bar.has_unsaved_changes = false;
             }
             (
-                KeyCode::Char('h' | 'j' | 'k' | 'l')
+                KeyCode::Char('h' | 'j' | 'k' | 'l' | 'w' | 'b')
                 | KeyCode::Left
                 | KeyCode::Right
                 | KeyCode::Down
@@ -117,6 +117,30 @@ impl Editor {
             (KeyCode::Char('i'), KeyModifiers::NONE) => {
                 self.enter_insert();
             }
+            (KeyCode::Char('t'), KeyModifiers::NONE) => {
+                // move cursor to the bottom of the document
+                if self.docu.n_lines > 0 {
+                    self.cursor_y = self.docu.n_lines - 1;
+
+                    // Set cursor to end of last line
+                    if let Some(line) = self.docu.lines.get(self.cursor_y as usize) {
+                        self.cursor_x = line.graphemes(true).count() as u16;
+                    } else {
+                        self.cursor_x = 0;
+                    }
+                } else {
+                    self.cursor_y = 0;
+                    self.cursor_x = 0;
+                }
+                self.update_offsets();
+            }
+            (KeyCode::Char('g'), KeyModifiers::NONE) => {
+                // move cursor to the top of the document
+                self.cursor_y = 0;
+                self.cursor_x = 0;
+                self.update_offsets();
+            }
+
             _ => {}
         }
     }
@@ -195,7 +219,6 @@ impl Editor {
     }
 
     fn enter_normal(&mut self) {
-        // TODO: REFLECT MODE CHANGE IN STATUS BAR
         self.status_bar.mode = Mode::Normal;
         self.mode = Mode::Normal;
     }
@@ -246,6 +269,18 @@ impl Editor {
                 if (self.cursor_x as usize) < graphemes.len() {
                     self.cursor_x += 1;
                 }
+            }
+            KeyCode::Char('w') => {
+                // move to the next word
+                let line = self.cursor_y;
+                let col = self.cursor_x;
+                (self.cursor_y, self.cursor_x) = self.docu.next_word(line, col);
+            }
+            KeyCode::Char('b') => {
+                // move to prev word
+                let line = self.cursor_y;
+                let col = self.cursor_x;
+                (self.cursor_y, self.cursor_x) = self.docu.prev_word(line, col);
             }
             _ => {}
         }
