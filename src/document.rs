@@ -3,6 +3,7 @@ use std::io::Write;
 use unicode_segmentation::UnicodeSegmentation;
 pub struct Document {
     pub file_name: String,
+    pub extension: String,
     pub lines: Vec<String>,
     pub n_lines: u16,
 }
@@ -16,8 +17,13 @@ impl Document {
         }
         let n_lines = lines.len() as u16;
         let file_name = file_name.to_string();
+        // get extension if any
+        let extension = file_name
+            .rsplit_once('.')
+            .map_or_else(String::new, |(_, ext)| ext.to_string());
         Document {
             file_name,
+            extension,
             lines,
             n_lines,
         }

@@ -1,3 +1,4 @@
+use crate::highlighting::Highlighter;
 use crate::render::Renderer;
 use crate::statusbar::StatusBar;
 use crate::term::Terminal;
@@ -19,6 +20,7 @@ pub struct Editor {
     pub top_offset: u16,
     pub left_offset: u16,
     pub status_bar: StatusBar,
+    pub highlighter: Highlighter,
 }
 
 impl Editor {
@@ -31,6 +33,7 @@ impl Editor {
             .unwrap_or(file_path)
             .to_string();
         let status_bar = StatusBar::new(file_name, Mode::Normal, false);
+        let highlighter = Highlighter::new();
         Ok(Editor {
             term,
             quit: false,
@@ -41,6 +44,7 @@ impl Editor {
             top_offset: 0,
             left_offset: 0,
             status_bar,
+            highlighter,
         })
     }
 
@@ -165,10 +169,8 @@ impl Editor {
             (KeyCode::Esc, KeyModifiers::NONE) => {
                 self.enter_normal();
             }
-            (
-                KeyCode::Enter | KeyCode::Backspace | KeyCode::Tab | KeyCode::Char(_),
-                KeyModifiers::NONE,
-            ) => {
+            (KeyCode::Enter | KeyCode::Backspace | KeyCode::Tab, KeyModifiers::NONE)
+            | (KeyCode::Char(_), KeyModifiers::NONE | KeyModifiers::SHIFT) => {
                 self.handle_writing_event(key.code);
                 self.status_bar.has_unsaved_changes = true;
             }
@@ -308,12 +310,13 @@ impl Editor {
         if self.cursor_y < self.top_offset {
             self.top_offset = self.cursor_y;
         } else if self.cursor_y >= self.top_offset + bottom_content.saturating_sub(margin) {
-            self.top_offset = self.cursor_y .saturating_sub(bottom_content.saturating_sub(margin + 1));
+            self.top_offset = self
+                .cursor_y
+                .saturating_sub(bottom_content.saturating_sub(margin + 1));
         }
     }
 
     fn update_left_offset(&mut self) {
-      
         let line_number_width = (self.docu.n_lines.to_string().len() + 3) as u16;
         let available_width = self.term.width.saturating_sub(line_number_width);
 
@@ -328,6 +331,4 @@ impl Editor {
         self.update_top_offset();
         self.update_left_offset();
     }
-
-    
 }

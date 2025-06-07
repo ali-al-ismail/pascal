@@ -2,10 +2,11 @@ use crate::editor::Editor;
 use std::env::{self};
 mod document;
 mod editor;
+mod highlighting;
 mod mode;
+mod render;
 mod statusbar;
 mod term;
-mod render;
 fn main() {
     if let Some(file_name) = collect_args() {
         match Editor::build(&file_name) {

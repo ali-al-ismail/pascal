@@ -1,8 +1,8 @@
 use crate::editor::Editor;
+use crate::term::Terminal;
 use std::io::Error;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
-use crate::term::Terminal;
 
 /// Renders the cursor and the lines of the document
 pub struct Renderer<'a> {
@@ -71,30 +71,51 @@ impl<'a> Renderer<'a> {
     fn render_line_content(&self, doc_row: u16) -> Result<(), Error> {
         let width = self.editor.term.width;
         let line = &self.editor.docu.lines[doc_row as usize];
-        let graphemes: Vec<&str> = line.graphemes(true).collect();
-        let mut rendered_line = String::new();
-        let mut width_remaining = 0; // for horizontal scrolling
-        let available_width = width.saturating_sub((self.get_line_number_width() +3) as u16);
+        let available_width = width.saturating_sub((self.get_line_number_width() + 3) as u16);
 
-        // set up the line content while skipping left_offset number of graphemes
-        for g in graphemes.iter().skip(self.editor.left_offset as usize) {
-            let graphene_width = g.width() as u16;
-            if width_remaining + graphene_width > available_width {
-                break; // stop rendering if exceed the available width
+        // highlight the line
+        let highlighted_segments = self
+            .editor
+            .highlighter
+            .highlight_line(line, &self.editor.docu.extension);
+
+        let mut width_remaining = 0;
+        let mut char_position = 0; // track position
+        for segment in highlighted_segments {
+            let segment_graphemes: Vec<&str> = segment.content.graphemes(true).collect();
+            for grapheme in segment_graphemes {
+                if char_position < self.editor.left_offset as usize {
+                    char_position += 1;
+                    continue;
+                }
+                let grapheme_width = grapheme.width() as u16;
+                if width_remaining + grapheme_width > available_width {
+                    Terminal::reset_color()?;
+                    return Ok(());
+                }
+                Self::apply_styling(&segment.style)?;
+                Terminal::print(grapheme)?;
+                width_remaining += grapheme_width;
+                char_position += 1;
             }
-            rendered_line.push_str(g);
-            width_remaining += graphene_width;
         }
-        Terminal::print(&rendered_line)?;
+        Terminal::reset_color()?;
+        Ok(())
+    }
+
+    fn apply_styling(style: &syntect::highlighting::Style) -> Result<(), Error> {
+        let fg = style.foreground;
+        let foreground_color = crossterm::style::Color::Rgb {
+            r: fg.r,
+            g: fg.g,
+            b: fg.b,
+        };
+        Terminal::set_foreground_color(foreground_color)?;
         Ok(())
     }
 
     fn render_empty_line(&self) -> Result<(), Error> {
-        let empty_line = format!(
-            "{:>width$}",
-            "~",
-            width = self.get_line_number_width()
-        );
+        let empty_line = format!("{:>width$}", "~", width = self.get_line_number_width());
         Terminal::set_foreground_color(crossterm::style::Color::DarkGrey)?;
         Terminal::print(&empty_line)?;
         Terminal::reset_color()?;
@@ -106,8 +127,8 @@ impl<'a> Renderer<'a> {
     }
 
     fn render_cursor(&self) -> Result<(), Error> {
-        let cursor_screen_y =
-            (self.editor.cursor_y.saturating_sub(self.editor.top_offset)).min(self.editor.term.height - 1);
+        let cursor_screen_y = (self.editor.cursor_y.saturating_sub(self.editor.top_offset))
+            .min(self.editor.term.height - 1);
         let line = &self.editor.docu.lines[self.editor.cursor_y as usize];
         let graphemes: Vec<&str> = line.graphemes(true).collect();
         let line_number_width = (self.get_line_number_width() + 3) as u16;
