@@ -9,17 +9,50 @@ pub struct Renderer<'a> {
     editor: &'a Editor,
 }
 
+// currently rendering is done every time the user moves the cursor or edits a line
+// optimization is possible by rendering only necessary lines which should improve performance on older systems
+// possible optimizations:
+// rerender only a single line when user edits it
+// rerender only the line and the ones below it when the user does a newline
+// rerender only the cursor when the user moves it
+// rerender the entire screen only when it requires scrolling or it has been resized
+// syntax highlighting is done every time a render operation is done, instead we should cache it and only recalculate when document changes
 impl<'a> Renderer<'a> {
     /// This is called by Editor's render method
     pub fn new(editor: &'a Editor) -> Self {
         Renderer { editor }
     }
 
-    /// Renders the lines of the document and the cursor
+    /// Renders all the lines of the document and the cursor
     pub fn render(&self) -> Result<(), Error> {
+        Terminal::clear()?;
+        Terminal::hide_cursor()?;
         self.render_document_lines()?;
         self.render_status_bar()?;
+        Terminal::show_cursor()?;
         self.render_cursor()?;
+        Terminal::flush()?;
+        Ok(())
+    }
+
+    /// re-renders a specific set of lines only
+    pub fn re_render_line(&self, from: u16, to: u16) -> Result<(), Error> {
+        Terminal::hide_cursor()?;
+        let max_row = self.editor.term.height.saturating_sub(2); // Exclude status bar and last line
+        for row in from..=to {
+            if row >= max_row {
+                break; // Don't render over status bar or below
+            }
+            Terminal::move_cursor(0, row)?;
+            Terminal::clear_current_line()?;
+            let doc_row = self.editor.top_offset + row;
+            if doc_row < self.editor.docu.n_lines {
+                self.render_content_line(doc_row)?;
+            } else {
+                self.render_empty_line()?;
+            }
+        }
+        Terminal::show_cursor()?;
         Terminal::flush()?;
         Ok(())
     }
@@ -36,6 +69,7 @@ impl<'a> Renderer<'a> {
                 self.render_empty_line()?;
             }
         }
+
         Ok(())
     }
 
@@ -126,7 +160,7 @@ impl<'a> Renderer<'a> {
         self.editor.docu.n_lines.to_string().len()
     }
 
-    fn render_cursor(&self) -> Result<(), Error> {
+    pub fn render_cursor(&self) -> Result<(), Error> {
         let cursor_screen_y = (self.editor.cursor_y.saturating_sub(self.editor.top_offset))
             .min(self.editor.term.height - 1);
         let line = &self.editor.docu.lines[self.editor.cursor_y as usize];
@@ -143,7 +177,7 @@ impl<'a> Renderer<'a> {
         Ok(())
     }
 
-    fn render_status_bar(&self) -> Result<(), Error> {
+    pub fn render_status_bar(&self) -> Result<(), Error> {
         let status_bar = self.editor.status_bar.format(
             self.editor.term.width,
             self.editor.status_bar.has_unsaved_changes,

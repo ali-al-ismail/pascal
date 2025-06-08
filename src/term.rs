@@ -39,28 +39,39 @@ impl Terminal {
 
     pub fn move_cursor(column: u16, row: u16) -> Result<(), Error> {
         stdout().queue(MoveTo(column, row))?;
-        Self::flush()?;
         Ok(())
     }
 
     pub fn set_background_color(color: Color) -> Result<(), Error> {
         stdout().queue(SetBackgroundColor(color))?;
-        Self::flush()?;
         Ok(())
     }
     pub fn set_foreground_color(color: Color) -> Result<(), Error> {
         stdout().queue(SetForegroundColor(color))?;
-        Self::flush()?;
         Ok(())
     }
     pub fn reset_color() -> Result<(), Error> {
         stdout().queue(ResetColor)?;
-        Self::flush()?;
         Ok(())
     }
 
     pub fn clear_current_line() -> Result<(), Error> {
         stdout().queue(Clear(ClearType::CurrentLine))?;
+        Ok(())
+    }
+
+    pub fn noblink_cursor() -> Result<(), Error> {
+        stdout().queue(crossterm::cursor::SetCursorStyle::SteadyBlock)?;
+        Ok(())
+    }
+
+    pub fn hide_cursor() -> Result<(), Error> {
+        stdout().queue(crossterm::cursor::Hide)?;
+        Ok(())
+    }
+
+    pub fn show_cursor() -> Result<(), Error> {
+        stdout().queue(crossterm::cursor::Show)?;
         Ok(())
     }
 }

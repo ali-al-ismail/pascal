@@ -27,6 +27,7 @@ impl Editor {
     pub fn build(file_path: &str) -> Result<Editor, Error> {
         let docu = Document::new(file_path);
         let term = Terminal::build()?;
+        Terminal::noblink_cursor()?;
         let file_name = Path::new(file_path)
             .file_name()
             .and_then(|name| name.to_str())
@@ -99,7 +100,6 @@ impl Editor {
                     self.handle_insert_mode_key_event(key);
                 }
             }
-            Terminal::clear()?;
             self.render()?;
         }
         // handle resize events
