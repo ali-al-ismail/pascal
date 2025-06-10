@@ -1,11 +1,33 @@
 use std::fs;
 use std::io::Write;
 use unicode_segmentation::UnicodeSegmentation;
+
+use crate::highlighting::{HighlightedSegment, Highlighter};
+
+pub struct RichLine {
+    pub line: Vec<HighlightedSegment>,
+}
+
 pub struct Document {
     pub file_name: String,
     pub extension: String,
-    pub lines: Vec<String>,
+    pub lines: Vec<String>,        // maybe make this a richline type instead?
+    pub rich_lines: Vec<RichLine>, // cached syntax highlighting, i need to implement a more efficient way to store them but this'll do
     pub n_lines: u16,
+}
+
+impl RichLine {
+    pub fn new(highlighter: &Highlighter, line: &str, extension: &str) -> Self {
+        let highlighted_segments = highlighter.highlight_line(line, extension);
+        RichLine {
+            line: highlighted_segments,
+        }
+    }
+
+    pub fn recalc(&mut self, line: &str, extension: &str) {
+        let highlighter = Highlighter::new();
+        self.line = highlighter.highlight_line(line, extension);
+    }
 }
 
 impl Document {
@@ -21,10 +43,17 @@ impl Document {
         let extension = file_name
             .rsplit_once('.')
             .map_or_else(String::new, |(_, ext)| ext.to_string());
+
+        let highlighter = Highlighter::new();
+        let rich_lines: Vec<RichLine> = lines
+            .iter()
+            .map(|line| RichLine::new(&highlighter, line, &extension))
+            .collect();
         Document {
             file_name,
             extension,
             lines,
+            rich_lines,
             n_lines,
         }
     }
@@ -57,6 +86,7 @@ impl Document {
         let binding = c.to_string();
         graphemes.insert(col as usize, &binding);
         *line_str = graphemes.concat();
+        self.rich_lines[line as usize].recalc(line_str, &self.extension);
     }
 
     pub fn remove_char(&mut self, line: u16, col: u16) {
@@ -71,6 +101,7 @@ impl Document {
         }
         graphemes.remove(col as usize);
         *line_str = graphemes.concat();
+        self.rich_lines[line as usize].recalc(line_str, &self.extension);
     }
 
     pub fn join_lines(&mut self, line: u16) {
@@ -82,6 +113,9 @@ impl Document {
         let prev_line_idx = line - 1;
         self.lines[prev_line_idx as usize].push_str(&current_line);
         self.n_lines -= 1;
+        self.rich_lines.remove(line as usize);
+        self.rich_lines[prev_line_idx as usize]
+            .recalc(&self.lines[prev_line_idx as usize], &self.extension);
     }
 
     pub fn newline(&mut self, line: u16, col: u16) {
@@ -91,6 +125,10 @@ impl Document {
         // case 1: user tries to add a new line at the end of the current line
         if col as usize == graphemes.len() {
             self.lines.insert(line as usize + 1, String::new());
+            self.rich_lines.insert(
+                line as usize + 1,
+                RichLine::new(&Highlighter::new(), "", &self.extension),
+            );
             self.n_lines += 1;
             return;
         }
@@ -99,6 +137,12 @@ impl Document {
         self.lines[line as usize] = graphemes.concat();
         self.lines.insert(line as usize + 1, new_line.concat());
         self.n_lines += 1;
+
+        self.rich_lines[line as usize].recalc(&self.lines[line as usize], &self.extension);
+        self.rich_lines.insert(
+            line as usize + 1,
+            RichLine::new(&Highlighter::new(), &new_line.concat(), &self.extension),
+        );
     }
 
     /// finds the next word operating on the following boundaries: whitespace, punctuation, any non-word character or underscore

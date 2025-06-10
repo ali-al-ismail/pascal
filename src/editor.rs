@@ -1,4 +1,3 @@
-use crate::highlighting::Highlighter;
 use crate::render::Renderer;
 use crate::statusbar::StatusBar;
 use crate::term::Terminal;
@@ -20,7 +19,6 @@ pub struct Editor {
     pub top_offset: u16,
     pub left_offset: u16,
     pub status_bar: StatusBar,
-    pub highlighter: Highlighter,
 }
 
 impl Editor {
@@ -34,7 +32,6 @@ impl Editor {
             .unwrap_or(file_path)
             .to_string();
         let status_bar = StatusBar::new(file_name, Mode::Normal, false);
-        let highlighter = Highlighter::new();
         Ok(Editor {
             term,
             quit: false,
@@ -45,7 +42,6 @@ impl Editor {
             top_offset: 0,
             left_offset: 0,
             status_bar,
-            highlighter,
         })
     }
 

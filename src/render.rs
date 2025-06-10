@@ -4,7 +4,6 @@ use std::io::Error;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-/// Renders the cursor and the lines of the document
 pub struct Renderer<'a> {
     editor: &'a Editor,
 }
@@ -104,14 +103,10 @@ impl<'a> Renderer<'a> {
 
     fn render_line_content(&self, doc_row: u16) -> Result<(), Error> {
         let width = self.editor.term.width;
-        let line = &self.editor.docu.lines[doc_row as usize];
+        let rich_line = &self.editor.docu.rich_lines[doc_row as usize];
         let available_width = width.saturating_sub((self.get_line_number_width() + 3) as u16);
 
-        // highlight the line
-        let highlighted_segments = self
-            .editor
-            .highlighter
-            .highlight_line(line, &self.editor.docu.extension);
+        let highlighted_segments = &rich_line.line;
 
         let mut width_remaining = 0;
         let mut char_position = 0; // track position
