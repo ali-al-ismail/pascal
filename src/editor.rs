@@ -49,7 +49,6 @@ impl Editor {
         if let Err(e) = self.welcome() {
             panic!("Couldn't welcome because of: {e}");
         }
-        // main editor loop
 
         if let Err(e) = self.render() {
             panic!("Couldn't render file: {e}");
@@ -68,7 +67,7 @@ impl Editor {
         }
     }
 
-    fn render(&self) -> Result<(), Error> {
+    fn render(&mut self) -> Result<(), Error> {
         Renderer::new(self).render()?;
         Ok(())
     }

@@ -14,6 +14,7 @@ pub struct Document {
     pub lines: Vec<String>,        // maybe make this a richline type instead?
     pub rich_lines: Vec<RichLine>, // cached syntax highlighting, i need to implement a more efficient way to store them but this'll do
     pub n_lines: u16,
+    pub highlighter: Highlighter,
 }
 
 impl RichLine {
@@ -24,8 +25,15 @@ impl RichLine {
         }
     }
 
-    pub fn recalc(&mut self, line: &str, extension: &str) {
-        let highlighter = Highlighter::new();
+    pub fn empty() -> Self {
+        RichLine { line: Vec::new() }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.line.is_empty()
+    }
+
+    pub fn recalc(&mut self, highlighter: &Highlighter, line: &str, extension: &str) {
         self.line = highlighter.highlight_line(line, extension);
     }
 }
@@ -45,16 +53,17 @@ impl Document {
             .map_or_else(String::new, |(_, ext)| ext.to_string());
 
         let highlighter = Highlighter::new();
-        let rich_lines: Vec<RichLine> = lines
-            .iter()
-            .map(|line| RichLine::new(&highlighter, line, &extension))
-            .collect();
+        let mut rich_lines: Vec<RichLine> = Vec::new();
+        for _ in 0..n_lines {
+            rich_lines.push(RichLine::empty());
+        }
         Document {
             file_name,
             extension,
             lines,
             rich_lines,
             n_lines,
+            highlighter,
         }
     }
 
@@ -86,7 +95,7 @@ impl Document {
         let binding = c.to_string();
         graphemes.insert(col as usize, &binding);
         *line_str = graphemes.concat();
-        self.rich_lines[line as usize].recalc(line_str, &self.extension);
+        self.rich_lines[line as usize].recalc(&self.highlighter, line_str, &self.extension);
     }
 
     pub fn remove_char(&mut self, line: u16, col: u16) {
@@ -101,7 +110,7 @@ impl Document {
         }
         graphemes.remove(col as usize);
         *line_str = graphemes.concat();
-        self.rich_lines[line as usize].recalc(line_str, &self.extension);
+        self.rich_lines[line as usize].recalc(&self.highlighter, line_str, &self.extension);
     }
 
     pub fn join_lines(&mut self, line: u16) {
@@ -114,8 +123,11 @@ impl Document {
         self.lines[prev_line_idx as usize].push_str(&current_line);
         self.n_lines -= 1;
         self.rich_lines.remove(line as usize);
-        self.rich_lines[prev_line_idx as usize]
-            .recalc(&self.lines[prev_line_idx as usize], &self.extension);
+        self.rich_lines[prev_line_idx as usize].recalc(
+            &self.highlighter,
+            &self.lines[prev_line_idx as usize],
+            &self.extension,
+        );
     }
 
     pub fn newline(&mut self, line: u16, col: u16) {
@@ -138,7 +150,11 @@ impl Document {
         self.lines.insert(line as usize + 1, new_line.concat());
         self.n_lines += 1;
 
-        self.rich_lines[line as usize].recalc(&self.lines[line as usize], &self.extension);
+        self.rich_lines[line as usize].recalc(
+            &self.highlighter,
+            &self.lines[line as usize],
+            &self.extension,
+        );
         self.rich_lines.insert(
             line as usize + 1,
             RichLine::new(&Highlighter::new(), &new_line.concat(), &self.extension),

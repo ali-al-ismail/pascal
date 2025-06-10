@@ -5,7 +5,7 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 pub struct Renderer<'a> {
-    editor: &'a Editor,
+    editor: &'a mut Editor,
 }
 
 // currently rendering is done every time the user moves the cursor or edits a line
@@ -18,20 +18,39 @@ pub struct Renderer<'a> {
 // syntax highlighting is done every time a render operation is done, instead we should cache it and only recalculate when document changes
 impl<'a> Renderer<'a> {
     /// This is called by Editor's render method
-    pub fn new(editor: &'a Editor) -> Self {
+    pub fn new(editor: &'a mut Editor) -> Self {
         Renderer { editor }
     }
 
     /// Renders all the lines of the document and the cursor
-    pub fn render(&self) -> Result<(), Error> {
+    pub fn render(&mut self) -> Result<(), Error> {
         Terminal::clear()?;
         Terminal::hide_cursor()?;
+        self.highlight_renderable_lines();
         self.render_document_lines()?;
         self.render_status_bar()?;
         Terminal::show_cursor()?;
         self.render_cursor()?;
         Terminal::flush()?;
         Ok(())
+    }
+
+    fn highlight_renderable_lines(&mut self) {
+        let height = self.editor.term.height;
+        let docu = &mut self.editor.docu;
+        for row in 0..height - 1 {
+            let doc_row = self.editor.top_offset + row; // for vertical scrolling
+            if doc_row < docu.n_lines {
+                let line = &docu.lines[doc_row as usize];
+                if docu.rich_lines[doc_row as usize].is_empty() {
+                    docu.rich_lines[doc_row as usize].recalc(
+                        &docu.highlighter,
+                        line,
+                        &docu.extension,
+                    );
+                }
+            }
+        }
     }
 
     /// re-renders a specific set of lines only
